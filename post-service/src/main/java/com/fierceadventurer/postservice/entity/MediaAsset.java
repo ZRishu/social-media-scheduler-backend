@@ -1,16 +1,17 @@
 package com.fierceadventurer.postservice.entity;
 import com.fierceadventurer.postservice.enums.PostType;
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.RequiredArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-@RequiredArgsConstructor
-@Data
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
 @Table(name = "media_assets")
 @Entity
 public class MediaAsset {

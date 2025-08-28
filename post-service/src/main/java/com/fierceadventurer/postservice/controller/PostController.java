@@ -11,7 +11,7 @@ import java.util.UUID;
 public class PostController {
 
     @PostMapping("/create")
-    public ResponseEntity<?> post(@RequestBody PostDto postDto) {
+    public ResponseEntity<?> createPost(@RequestBody PostDto postDto) {
         return ResponseEntity.ok().body(postDto);
     }
 

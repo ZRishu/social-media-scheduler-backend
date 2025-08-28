@@ -1,14 +1,15 @@
 package com.fierceadventurer.postservice.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.RequiredArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.*;
 
-@RequiredArgsConstructor
-@Data
+@AllArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
 @Entity
 @Table(name = "post_variants")
 public class PostVariant {
@@ -20,7 +21,7 @@ public class PostVariant {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "post_id" , nullable = false)
-    private  Post postId;
+    private  Post post;
 
     @Column(nullable = false)
     private String platform;
@@ -30,7 +31,7 @@ public class PostVariant {
 
     @ElementCollection
     @CollectionTable(name = "post_variant_hashtags" , joinColumns = @JoinColumn(name = "variant_id"))
-    private Set<String> hashtags = new HashSet<>();
+    private List<String> hashtags = new ArrayList<>();
 
     @ManyToMany
     @JoinTable(
@@ -42,4 +43,5 @@ public class PostVariant {
 
     @Column(nullable = false)
     private LocalDateTime scheduledAt;
+
 }

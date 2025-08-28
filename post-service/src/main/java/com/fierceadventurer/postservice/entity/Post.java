@@ -1,21 +1,24 @@
 package com.fierceadventurer.postservice.entity;
 
+import com.fierceadventurer.postservice.dto.MediaAssetDto;
 import com.fierceadventurer.postservice.enums.PostStatus;
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.RequiredArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import javax.print.attribute.standard.Media;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-@RequiredArgsConstructor
-@Table(name = "posts")
-@Data
+
 @Entity
+@Table(name = "posts")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+
 public class Post {
 
     @Id
@@ -46,13 +49,12 @@ public class Post {
         cascade = CascadeType.ALL,
         orphanRemoval = true
     )
-    private List<MediaAsset> media = new ArrayList<>();
+    private List<MediaAsset> mediaAssets = new ArrayList<>();
 
     @OneToMany(
-            mappedBy = "postId",
+            mappedBy = "post",
             cascade = CascadeType.ALL,
             orphanRemoval = true
     )
     private List<PostVariant> variants = new ArrayList<>();
-
 }

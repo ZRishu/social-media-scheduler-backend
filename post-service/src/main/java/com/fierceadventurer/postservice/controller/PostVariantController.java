@@ -21,6 +21,11 @@ public class PostVariantController {
         return ResponseEntity.ok().build();
     }
 
+    @PutMapping("/{variantId}")
+    public ResponseEntity<?> updatePostVariant(@PathVariable UUID postId, @RequestBody PostVariantDto postVariantDto) {
+        return ResponseEntity.ok().build();
+    }
+
     @GetMapping
     public ResponseEntity<?> getAllPostVariants(@PathVariable UUID postId) {
         return ResponseEntity.ok().build();
