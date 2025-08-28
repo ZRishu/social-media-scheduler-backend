@@ -11,7 +11,7 @@ public class PostVariantDto {
     private UUID variantId;
     private String platform;
     private String content;
-    private List<String> HashTags;
+    private List<String> hashtags;
     private LocalDateTime scheduledAt;
     private List<MediaAssetDto> mediaAssets;
 }

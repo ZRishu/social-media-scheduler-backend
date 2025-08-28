@@ -8,12 +8,12 @@ import com.fierceadventurer.postservice.service.PostService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.errors.ResourceNotFoundException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
+
 
 @Service
 @Slf4j
@@ -59,22 +59,19 @@ public class PostServiceImpl implements PostService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<PostDto> getAllPosts() {
+    public Page<PostDto> getAllPosts(Pageable pageable) {
 
-        return postRepository.findAll()
-                .stream().map(postMapper::toDto)
-                .collect(Collectors.toList());
+        return postRepository.findAll(pageable)
+                .map(postMapper::toDto);
 
     }
 
     @Override
     @Transactional
-    public boolean deletePostById(UUID postId) {
+    public void deletePostById(UUID postId) {
         if (!postRepository.existsById(postId)) {
             throw new ResourceNotFoundException("Post not found with id: " + postId);
         }
         postRepository.deleteById(postId);
-        return true;
-
     }
 }

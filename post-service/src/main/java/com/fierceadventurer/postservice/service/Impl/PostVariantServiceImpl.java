@@ -64,7 +64,7 @@ public class PostVariantServiceImpl implements PostVariantService {
         }
         variant.setPlatform(postVariantDto.getPlatform());
         variant.setContent(postVariantDto.getContent());
-        variant.setHashtags(postVariantDto.getHashTags());
+        variant.setHashtags(postVariantDto.getHashtags());
         variant.setScheduledAt(postVariantDto.getScheduledAt());
 
         PostVariant updateVariant = postVariantRepository.save(variant);
