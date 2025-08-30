@@ -62,7 +62,7 @@ public class PostVariantServiceImpl implements PostVariantService {
         if(!variant.getPost().getId().equals(postId)) {
             throw new ResourceNotFoundException("Cannot update post variant " + variantId + " does not belong to post " + postId);
         }
-        variant.setPlatform(postVariantDto.getPlatform());
+
         variant.setContent(postVariantDto.getContent());
         variant.setHashtags(postVariantDto.getHashtags());
         variant.setScheduledAt(postVariantDto.getScheduledAt());

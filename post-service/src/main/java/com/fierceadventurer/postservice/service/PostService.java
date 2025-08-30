@@ -1,22 +1,18 @@
 package com.fierceadventurer.postservice.service;
 
-import com.fierceadventurer.postservice.dto.PostDto;
+import com.fierceadventurer.postservice.dto.PostRequestDto;
 
+import com.fierceadventurer.postservice.dto.PostResponseDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
-import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
 
 
 public interface PostService {
-    PostDto createPost(PostDto postDto);
-    PostDto updatePostById(UUID postId , PostDto postDto);
-    PostDto getPostById(UUID postId);
-    Page<PostDto> getAllPosts(Pageable pageable);
-    void deletePostById(UUID postId);
-
-
-
+    PostResponseDto createPost(PostRequestDto postRequestDto);
+    PostResponseDto updatePostById(UUID postId , PostRequestDto postRequestDto);
+    PostResponseDto getPostById(UUID postId);
+    Page<PostResponseDto> getAllPosts(Pageable pageable);
+    PostResponseDto deletePostById(UUID postId);
 }

@@ -3,7 +3,7 @@ version: '3.8'
 services:
   postgres:
     image: postgres:15 # Using a specific version is recommended
-    container_name: postgres
+    container_name: post-service-db
     environment:
       - POSTGRES_USER=admin
       - POSTGRES_PASSWORD=password
