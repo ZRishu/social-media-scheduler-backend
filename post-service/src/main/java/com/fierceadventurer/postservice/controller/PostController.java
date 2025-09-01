@@ -2,6 +2,8 @@ package com.fierceadventurer.postservice.controller;
 
 import com.fierceadventurer.postservice.dto.PostRequestDto;
 import com.fierceadventurer.postservice.dto.PostResponseDto;
+import com.fierceadventurer.postservice.entity.MediaAsset;
+import com.fierceadventurer.postservice.entity.PostVariant;
 import com.fierceadventurer.postservice.service.PostService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -49,5 +51,6 @@ public class PostController {
         postService.deletePostById(postId);
         return ResponseEntity.noContent().build();
     }
+
 
 }

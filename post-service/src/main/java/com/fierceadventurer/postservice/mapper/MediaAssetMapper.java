@@ -5,7 +5,7 @@ import com.fierceadventurer.postservice.entity.MediaAsset;
 import org.mapstruct.Mapper;
 import org.mapstruct.factory.Mappers;
 
-@Mapper
+@Mapper(componentModel = "spring")
 public interface MediaAssetMapper {
     MediaAssetMapper Instance = Mappers.getMapper(MediaAssetMapper.class);
     MediaAssetDto toDto(MediaAsset mediaAsset);

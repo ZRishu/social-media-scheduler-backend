@@ -1,9 +1,11 @@
 package com.fierceadventurer.postservice.service.Impl;
 
 import com.fierceadventurer.postservice.dto.PostVariantDto;
+import com.fierceadventurer.postservice.entity.MediaAsset;
 import com.fierceadventurer.postservice.entity.Post;
 import com.fierceadventurer.postservice.entity.PostVariant;
 import com.fierceadventurer.postservice.mapper.PostVariantMapper;
+import com.fierceadventurer.postservice.repository.MediaAssetRepository;
 import com.fierceadventurer.postservice.repository.PostRepository;
 import com.fierceadventurer.postservice.repository.PostVariantRepository;
 import com.fierceadventurer.postservice.service.PostVariantService;
@@ -22,6 +24,7 @@ public class PostVariantServiceImpl implements PostVariantService {
     private final PostVariantRepository postVariantRepository;
     private final PostRepository postRepository;
     private final PostVariantMapper variantMapper = PostVariantMapper.Instance;
+    private final MediaAssetRepository mediaAssetRepository;
 
     @Override
     @Transactional
@@ -30,6 +33,13 @@ public class PostVariantServiceImpl implements PostVariantService {
                ()-> new ResourceNotFoundException("Cannot create a variant for non existing post with id: " + postId));
         PostVariant variant = variantMapper.toEntity(postVariantDto);
         variant.setPost(post);
+
+        if(postVariantDto.getMediaAssetIds() != null
+                && !postVariantDto.getMediaAssetIds().isEmpty()) {
+            List<MediaAsset> mediaAssetToLink = mediaAssetRepository.findAllById(postVariantDto
+                    .getMediaAssetIds());
+            variant.setMediaAssets(mediaAssetToLink);
+        }
 
         PostVariant savedVariant = postVariantRepository.save(variant);
         return variantMapper.toDto(savedVariant);

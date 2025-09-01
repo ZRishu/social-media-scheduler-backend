@@ -14,5 +14,5 @@ public interface PostService {
     PostResponseDto updatePostById(UUID postId , PostRequestDto postRequestDto);
     PostResponseDto getPostById(UUID postId);
     Page<PostResponseDto> getAllPosts(Pageable pageable);
-    PostResponseDto deletePostById(UUID postId);
+    void deletePostById(UUID postId);
 }

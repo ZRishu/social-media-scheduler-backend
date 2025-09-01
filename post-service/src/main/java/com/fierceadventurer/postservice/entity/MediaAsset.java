@@ -38,6 +38,6 @@ public class MediaAsset {
     @JoinColumn(name = "post_id")
     private Post post;
 
-    @ManyToMany(mappedBy = "mediaRefs")
+    @ManyToMany(mappedBy = "mediaAssets")
     private List<PostVariant> variants = new ArrayList<>();
 }

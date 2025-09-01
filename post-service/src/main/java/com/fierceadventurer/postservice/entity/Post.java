@@ -1,6 +1,5 @@
 package com.fierceadventurer.postservice.entity;
 
-import com.fierceadventurer.postservice.dto.MediaAssetDto;
 import com.fierceadventurer.postservice.enums.PostStatus;
 import jakarta.persistence.*;
 import lombok.*;
@@ -57,4 +56,14 @@ public class Post {
             orphanRemoval = true
     )
     private List<PostVariant> variants = new ArrayList<>();
+
+    public void addMediaAsset(MediaAsset mediaAsset) {
+        this.mediaAssets.add(mediaAsset);
+        mediaAsset.setPost(this);
+    }
+
+    public void addVariant(PostVariant variant) {
+        this.variants.add(variant);
+        variant.setPost(this);
+    }
 }

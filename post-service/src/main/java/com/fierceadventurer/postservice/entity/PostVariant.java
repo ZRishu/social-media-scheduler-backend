@@ -39,7 +39,7 @@ public class PostVariant {
             joinColumns = @JoinColumn(name = "variant_id"),
             inverseJoinColumns = @JoinColumn(name = "asset_id")
     )
-    private List<MediaAsset> mediaRefs= new ArrayList<>();
+    private List<MediaAsset> mediaAssets= new ArrayList<>();
 
     @Column(nullable = false)
     private LocalDateTime scheduledAt;

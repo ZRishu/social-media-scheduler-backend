@@ -2,7 +2,9 @@ package com.fierceadventurer.postservice.service.Impl;
 
 import com.fierceadventurer.postservice.dto.PostRequestDto;
 import com.fierceadventurer.postservice.dto.PostResponseDto;
+import com.fierceadventurer.postservice.entity.MediaAsset;
 import com.fierceadventurer.postservice.entity.Post;
+import com.fierceadventurer.postservice.entity.PostVariant;
 import com.fierceadventurer.postservice.enums.PostStatus;
 import com.fierceadventurer.postservice.exception.ResourceNotFoundException;
 import com.fierceadventurer.postservice.mapper.PostRequestMapper;
@@ -17,7 +19,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 
@@ -34,18 +35,16 @@ public class PostServiceImpl implements PostService {
     @Transactional
     public PostResponseDto createPost(PostRequestDto postRequestDto) {
         Post post = postRequestMapper.toEntity(postRequestDto);
-        post.setDatePosted(LocalDateTime.now());
-        post.setLastEdited(LocalDateTime.now());
-        try {
-            post.setStatus(PostStatus.PUBLISHED);
-            Post savedPost = postRepository.save(post);
-            log.debug("Created post {}", post);
-            return postResponseMapper.toDto(savedPost);
-        } catch (DataAccessException e) {
-            log.error("Failed to create post {}" , e.getMessage());
-            post.setStatus(PostStatus.FAILED);
-            return postResponseMapper.toDto(post);
+        post.setStatus(PostStatus.PUBLISHED);
+        if (post.getMediaAssets() != null) {
+            post.getMediaAssets().forEach(mediaAsset -> mediaAsset.setPost(post));
         }
+        if (post.getVariants() != null) {
+            post.getVariants().forEach(variant -> variant.setPost(post));
+        }
+        Post savedPost = postRepository.save(post);
+        log.debug("Created post {}", post);
+        return postResponseMapper.toDto(savedPost);
     }
 
     @Override
@@ -54,17 +53,11 @@ public class PostServiceImpl implements PostService {
         Post existingPost = postRepository.findById(postId).orElseThrow(
                 () -> new ResourceNotFoundException("Post not found with id: " + postId ));
         postRequestMapper.updatePost(postRequestDto, existingPost);
-        existingPost.setLastEdited(LocalDateTime.now());
-        try {
-            existingPost.setStatus(PostStatus.UPDATED);
-            Post updatedPost = postRepository.save(existingPost);
-            log.debug("Updated post {}", existingPost);
-            return postResponseMapper.toDto(updatedPost);
-        } catch (DataAccessException e) {
-            log.error("Failed to update post  with id: {}" , e.getMessage());
-            existingPost.setStatus(PostStatus.FAILED);
-            return postResponseMapper.toDto(existingPost);
-        }
+        existingPost.setStatus(PostStatus.UPDATED);
+
+        Post updatedPost = postRepository.save(existingPost);
+        log.info("Successfully updated post with ID: {}", postId);
+        return postResponseMapper.toDto(updatedPost);
     }
 
     @Override
@@ -89,14 +82,14 @@ public class PostServiceImpl implements PostService {
 
     @Override
     @Transactional
-    public PostResponseDto deletePostById(UUID postId) {
+    public void deletePostById(UUID postId) {
         Post postTodelete = postRepository.findByIdAndStatusNot(postId , PostStatus.DELETED).orElseThrow(
                 ()-> new ResourceNotFoundException("Post not found with id: " + postId)
         );
         postTodelete.setStatus(PostStatus.DELETED);
         Post deletedPost = postRepository.save(postTodelete);
         log.debug("Marked post as deleted with id {}", postId);
-        return postResponseMapper.toDto(deletedPost);
+
 
 
     }

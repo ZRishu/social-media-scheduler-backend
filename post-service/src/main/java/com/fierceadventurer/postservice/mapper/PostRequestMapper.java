@@ -2,10 +2,9 @@ package com.fierceadventurer.postservice.mapper;
 
 import com.fierceadventurer.postservice.dto.PostRequestDto;
 import com.fierceadventurer.postservice.entity.Post;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
+import org.mapstruct.*;
 import org.mapstruct.factory.Mappers;
+
 @Mapper(componentModel = "spring")
 public interface PostRequestMapper {
     PostRequestDto toDto(Post post);

@@ -11,7 +11,7 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface PostRepository extends JpaRepository<Post, UUID> , PagingAndSortingRepository<Post, UUID> {
+public interface PostRepository extends JpaRepository<Post, UUID>  {
     Optional<Post> findByIdAndStatusNot(UUID id, PostStatus status);
     Page<Post> findAllByStatusNot(PostStatus status, Pageable pageable);
 }
