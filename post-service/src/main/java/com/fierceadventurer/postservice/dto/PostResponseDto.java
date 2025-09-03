@@ -8,7 +8,7 @@ import java.util.UUID;
 
 @Data
 public class PostResponseDto {
-
+    private UUID id;
     private String title;
     private String content;
     private PostStatus status;

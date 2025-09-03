@@ -23,7 +23,7 @@ public class MediaAssetController {
     public ResponseEntity<MediaAssetDto> addMediaAssetToPost(
             @PathVariable UUID postId,@Valid @RequestBody MediaAssetDto mediaAssetDto){
         MediaAssetDto addMediaAsset = mediaAssetService.addMediaToPost(postId, mediaAssetDto);
-        return new ResponseEntity<>(addMediaAsset, HttpStatus.OK);
+        return new ResponseEntity<>(addMediaAsset, HttpStatus.CREATED);
     }
 
     @GetMapping("/{assetId}")
@@ -39,13 +39,13 @@ public class MediaAssetController {
     }
 
     @DeleteMapping("/{assetId}")
-    public ResponseEntity<MediaAssetDto> deleteMediaAssetFromPostById(@PathVariable UUID postId, @PathVariable UUID assetId) {
+    public ResponseEntity<Void> deleteMediaAssetFromPostById(@PathVariable UUID postId, @PathVariable UUID assetId) {
         mediaAssetService.deleteMediaAssetById(postId, assetId);
         return ResponseEntity.noContent().build();
     }
 
-    @DeleteMapping("media")
-    public ResponseEntity<MediaAssetDto> deleteAllMediaAssets(@PathVariable UUID postId) {
+    @DeleteMapping
+    public ResponseEntity<Void> deleteAllMediaAssets(@PathVariable UUID postId) {
         mediaAssetService.deleteAllMediaAssetsForPost(postId);
         return ResponseEntity.noContent().build();
     }

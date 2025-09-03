@@ -1,18 +1,38 @@
-version: '3.8'
-
 services:
-  postgres:
-    image: postgres:15 # Using a specific version is recommended
-    container_name: post-service-db
+  post-db:
+    image: postgres:15
+    container_name: post-db
     environment:
-      - POSTGRES_USER=admin
+      - POSTGRES_USER=admin1
       - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=post-service-db # Optional: you can specify a database name here
+      - POSTGRES_DB=post-service-db
     ports:
       - "5000:5432"
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - post-data:/var/lib/postgresql/data
+    networks:
+      - social_media_net
+    restart: always
+
+  scheduler-db:
+    image: postgres:15
+    container_name: scheduler-db
+    environment:
+      - POSTGRES_USER=admin2
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=scheduler-service-db
+    ports:
+      - "5001:5432"
+    volumes:
+      - scheduler-data:/var/lib/postgresql/data
+    networks:
+      - social_media_net
     restart: always
 
 volumes:
-  postgres-data:
+  post-data:
+  scheduler-data:
+
+networks:
+  social_media_net:
+    driver: bridge
