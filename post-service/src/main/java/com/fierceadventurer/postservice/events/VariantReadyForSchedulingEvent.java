@@ -1,4 +1,4 @@
-package com.fierceadventurer.postservice.dto;
+package com.fierceadventurer.postservice.events;
 
 import lombok.Data;
 
@@ -7,11 +7,15 @@ import java.util.List;
 import java.util.UUID;
 
 @Data
-public class PostVariantDto {
+public class VariantReadyForSchedulingEvent {
+    private UUID postId;
     private UUID variantId;
+    private UUID socialAccountId;
     private String platform;
+    private String title;
     private String content;
     private List<String> hashtags;
+    private List<String> mediaUrls;
     private LocalDateTime scheduledAt;
-    private List<UUID> mediaAssetIds;
+
 }
