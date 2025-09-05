@@ -1,6 +1,7 @@
 package com.fierceadventurer.schedulerservice.service.impl;
 
 import com.fierceadventurer.schedulerservice.dto.ScheduledJobDto;
+import com.fierceadventurer.schedulerservice.dto.UpdateJobRequestDto;
 import com.fierceadventurer.schedulerservice.entities.PublishAttempt;
 import com.fierceadventurer.schedulerservice.entities.ScheduledJob;
 import com.fierceadventurer.schedulerservice.enums.AttemptStatus;
@@ -133,6 +134,19 @@ public class JobExecutionServiceImpl implements JobExecutionService {
         ScheduledJob repostedJob = jobRepository.save(job);
         log.info("Successfully reposted job with ID {}", jobId);
         return schedulerMapper.toDto(repostedJob);
+    }
+
+    @Override
+    @Transactional
+    public ScheduledJobDto updateJobSchedule(UUID jobId, UpdateJobRequestDto requestDto) {
+        ScheduledJob job = jobRepository.findById(jobId).orElseThrow(
+                ()-> new ResourceNotFoundException("job not found with id:" + jobId));
+        if(job.getStatus() != JobStatus.PENDING){
+            throw new IllegalStateException("Cannot update a job that is not in pending status.");
+        }
+        job.setScheduledAt(requestDto.getScheduledAt());
+        ScheduledJob updatedJob = jobRepository.save(job);
+        return schedulerMapper.toDto(updatedJob);
     }
 
 

@@ -39,16 +39,5 @@ public class JobQueryServiceImpl implements JobQueryService {
     }
 
 
-    @Override
-    @Transactional
-    public ScheduledJobDto updateJobSchedule(UUID jobId, UpdateJobRequestDto requestDto) {
-        ScheduledJob job = jobRepository.findById(jobId).orElseThrow(
-                ()-> new ResourceNotFoundException("job not found with id:" + jobId));
-        if(job.getStatus() != JobStatus.PENDING){
-            throw new IllegalStateException("Cannot update a job that is not in pending status.");
-        }
-        job.setScheduledAt(requestDto.getScheduledAt());
-        ScheduledJob updatedJob = jobRepository.save(job);
-        return schedulerMapper.toDto(updatedJob);
-    }
+
 }

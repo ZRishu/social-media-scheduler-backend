@@ -2,6 +2,7 @@ package com.fierceadventurer.schedulerservice.controllers;
 
 import com.fierceadventurer.schedulerservice.dto.ScheduledJobDto;
 import com.fierceadventurer.schedulerservice.dto.UpdateJobRequestDto;
+import com.fierceadventurer.schedulerservice.service.JobExecutionService;
 import com.fierceadventurer.schedulerservice.service.JobQueryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -17,6 +18,7 @@ import java.util.UUID;
 public class JobController {
 
     private final JobQueryService jobQueryService;
+    private final JobExecutionService jobExecutionService;
 
 
     @GetMapping
@@ -33,17 +35,19 @@ public class JobController {
 
     @PutMapping("/{jobId}")
     public ResponseEntity<ScheduledJobDto> updatePendingJob(@PathVariable UUID jobId , @RequestBody UpdateJobRequestDto requestDto) {
-        ScheduledJobDto updatedJob = jobQueryService.updateJobSchedule(jobId, requestDto);
+        ScheduledJobDto updatedJob = jobExecutionService.updateJobSchedule(jobId, requestDto);
         return ResponseEntity.ok(updatedJob);
     }
 
     @PostMapping("/{jobId}/retry")
     public ResponseEntity<Void> retryFailedJob(@PathVariable UUID jobId) {
+        jobExecutionService.repostJob(jobId);
         return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/{jobId}")
     public ResponseEntity<Void> cancelPendingJob(@PathVariable UUID jobId) {
+        jobExecutionService.cancelJob(jobId);
         return ResponseEntity.noContent().build();
     }
 }

@@ -11,5 +11,5 @@ public interface JobQueryService {
     ScheduledJobDto getJobById(UUID jobId);
     Page<ScheduledJobDto> getAllJobs(Pageable pageable);
 
-    ScheduledJobDto updateJobSchedule(UUID jobId, UpdateJobRequestDto requestDto);
+
 }
