@@ -18,7 +18,7 @@ import java.util.UUID;
 @Table(name = "scheduled_job")
 @Getter
 @Setter
-@RequiredArgsConstructor
+@NoArgsConstructor
 
 public class ScheduledJob {
 
@@ -29,12 +29,18 @@ public class ScheduledJob {
     @Column(nullable = false , unique = true)
     private UUID postVariantId;
 
+    @Column(nullable = false, updatable = false)
+    private UUID socialAccountId;
+
     @Column(nullable = false)
     private LocalDateTime scheduledAt;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private JobStatus jobStatus = JobStatus.PENDING;
+    private JobStatus status = JobStatus.PENDING;
+
+    private LocalDateTime deletedAt;
+
 
     private int retryCount = 0;
 

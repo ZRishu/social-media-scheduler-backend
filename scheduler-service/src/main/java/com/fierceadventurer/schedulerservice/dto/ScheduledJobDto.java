@@ -18,6 +18,8 @@ public class ScheduledJobDto {
     private LocalDateTime updatedAt;
     private int retryCount;
     private String lastError;
+    private LocalDateTime deletedAt;
+
     private List<PublishAttemptDto> attempts;
 
 }

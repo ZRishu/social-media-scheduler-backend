@@ -14,7 +14,7 @@ import java.util.UUID;
 @Table(name = "publish_attempts" )
 @Getter
 @Setter
-@RequiredArgsConstructor
+@NoArgsConstructor
 
 public class PublishAttempt {
     @Id
