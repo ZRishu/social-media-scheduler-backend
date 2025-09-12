@@ -9,7 +9,7 @@ import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 
 @Configuration
-public class KakfaConsumerConfig {
+public class KafkaConsumerConfig {
     @Bean
     public ConsumerFactory<String , VariantReadyForSchedulingEvent> consumerFactory(
             KafkaProperties kafkaProperties) {
