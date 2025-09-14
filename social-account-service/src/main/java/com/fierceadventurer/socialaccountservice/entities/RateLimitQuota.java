@@ -16,7 +16,7 @@ import java.util.UUID;
 public class RateLimitQuota {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID quotaId;
 
     private LocalDateTime windowStart;

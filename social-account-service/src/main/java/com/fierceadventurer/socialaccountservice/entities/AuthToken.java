@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "auth_Tokens")
+@Table(name = "auth_tokens")
 public class AuthToken {
 
     @Id

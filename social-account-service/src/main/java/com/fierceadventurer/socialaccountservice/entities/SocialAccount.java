@@ -23,7 +23,7 @@ import java.util.UUID;
 public class SocialAccount {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID accountId;
 
     @Column(nullable = false , updatable = false)
