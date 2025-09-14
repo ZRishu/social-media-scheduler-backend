@@ -1,14 +1,14 @@
 package com.fierceadventurer.socialaccountservice.mapper;
 
-import com.fierceadventurer.socialaccountservice.dto.AuthTokenDto;
-import com.fierceadventurer.socialaccountservice.dto.CreateSocialAccountRequestDto;
-import com.fierceadventurer.socialaccountservice.dto.RateLimitQuotaDto;
-import com.fierceadventurer.socialaccountservice.dto.SocialAccountResponseDto;
+import com.fierceadventurer.socialaccountservice.dto.*;
 import com.fierceadventurer.socialaccountservice.entities.AuthToken;
 import com.fierceadventurer.socialaccountservice.entities.RateLimitQuota;
 import com.fierceadventurer.socialaccountservice.entities.SocialAccount;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+
+import java.util.Collections;
+import java.util.List;
 
 @Mapper(componentModel = "spring")
 public interface SocialAccountMapper {
@@ -23,12 +23,18 @@ public interface SocialAccountMapper {
 
     @Mapping(target = "tokenId" , ignore = true)
     @Mapping(target = "socialAccount" , ignore = true)
-    AuthToken toEntity(AuthTokenDto authTokenDto) ;
+    AuthToken toEntity(CreateAuthTokenRequestDto createDto) ;
+
+    default List<AuthToken> mapAuthTokenDtoToList(CreateAuthTokenRequestDto createDto){
+        if(createDto == null){
+            return Collections.emptyList();
+        }
+        return Collections.singletonList(toEntity(createDto));
+    }
+
 
     SocialAccountResponseDto toDto(SocialAccount socialAccount) ;
 
-    @Mapping(target = "accessToken", ignore = true )
-    @Mapping(target = "refreshToken" , ignore = true)
     AuthTokenDto toDto(AuthToken authToken);
 
     RateLimitQuotaDto toDto(RateLimitQuota rateLimitQuota);

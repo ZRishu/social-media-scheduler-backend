@@ -41,7 +41,7 @@ public class SocialAccount {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private AccountStatus accountStatus = AccountStatus.ACTIVE;
+    private AccountStatus status = AccountStatus.ACTIVE;
 
     @CreationTimestamp
     @Column(nullable = false)
@@ -57,7 +57,7 @@ public class SocialAccount {
     private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "socialAccount" , cascade = CascadeType.ALL , orphanRemoval = true)
-    private List<AuthToken> authToken = new ArrayList<>();
+    private List<AuthToken> authTokens = new ArrayList<>();
 
     @OneToOne(mappedBy = "socialAccount" , cascade = CascadeType.ALL , orphanRemoval = true)
     private RateLimitQuota rateLimitQuota;

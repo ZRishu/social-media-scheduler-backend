@@ -34,7 +34,7 @@ public class SocialAccountController {
         return ResponseEntity.ok().build();
     }
 
-    @DeleteMapping("/{accountId")
+    @DeleteMapping("/{accountId}")
     public ResponseEntity<Void> deleteAccount(@PathVariable UUID accountId){
         return ResponseEntity.noContent().build();
     }

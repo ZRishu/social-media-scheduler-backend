@@ -1,6 +1,9 @@
 package com.fierceadventurer.socialaccountservice.entities;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -8,6 +11,9 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "auth_tokens")
+@Getter
+@Setter
+@NoArgsConstructor
 public class AuthToken {
 
     @Id
