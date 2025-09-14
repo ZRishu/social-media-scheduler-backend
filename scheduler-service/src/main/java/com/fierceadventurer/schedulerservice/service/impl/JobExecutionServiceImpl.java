@@ -7,13 +7,13 @@ import com.fierceadventurer.schedulerservice.entities.ScheduledJob;
 import com.fierceadventurer.schedulerservice.enums.AttemptStatus;
 import com.fierceadventurer.schedulerservice.enums.JobStatus;
 import com.fierceadventurer.schedulerservice.events.VariantReadyForSchedulingEvent;
+import com.fierceadventurer.schedulerservice.exceptions.ResourceNotFoundException;
 import com.fierceadventurer.schedulerservice.mappers.SchedulerMapper;
 import com.fierceadventurer.schedulerservice.repository.PublishAttemptRepository;
 import com.fierceadventurer.schedulerservice.repository.ScheduledJobRepository;
 import com.fierceadventurer.schedulerservice.service.JobExecutionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.common.errors.ResourceNotFoundException;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -120,6 +120,7 @@ public class JobExecutionServiceImpl implements JobExecutionService {
     }
 
     @Override
+    @Transactional
     public ScheduledJobDto repostJob(UUID jobId) {
         log.info("Attempting to repost job with ID {}", jobId);
         ScheduledJob job = jobRepository.findById(jobId).orElseThrow(
