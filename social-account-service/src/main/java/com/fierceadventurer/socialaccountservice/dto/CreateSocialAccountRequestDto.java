@@ -1,5 +1,6 @@
 package com.fierceadventurer.socialaccountservice.dto;
 
+import com.fierceadventurer.socialaccountservice.enums.AccountType;
 import com.fierceadventurer.socialaccountservice.enums.Provider;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -25,4 +26,10 @@ public class CreateSocialAccountRequestDto {
 
     @NotNull
     private CreateAuthTokenRequestDto authToken;
+
+    @NotNull(message = "Account Type must be specified")
+    private AccountType accountType;
+
+    @NotBlank(message = "External ID cannot be blank")
+    private String externalId;
 }

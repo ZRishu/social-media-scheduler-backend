@@ -4,5 +4,6 @@ public enum Provider {
     TWITTER,
     FACEBOOK,
     INSTAGRAM,
-    LINKEDIN
+    LINKEDIN,
+    THREADS
 }
