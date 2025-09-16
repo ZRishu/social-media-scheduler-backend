@@ -27,7 +27,7 @@ public class RateLimitServiceImpl implements RateLimitService {
                 .orElseThrow(()-> new ResourceNotFoundException
                         ("Rate limit quota not found for account: " + accountId));
 
-        if(LocalDateTime.now().isAfter(quota.getWindowEnd())){
+        if(quota.getWindowEnd() == null || LocalDateTime.now().isAfter(quota.getWindowEnd())){
             String providerKey =  quota.getSocialAccount().getProvider().name().toLowerCase();
             RateLimitProperties.ProviderConfig config = rateLimitProperties.getProviders()
                     .getOrDefault(providerKey , rateLimitProperties.getProviders().get("default"));
