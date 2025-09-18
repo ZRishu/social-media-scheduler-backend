@@ -1,5 +1,6 @@
 package com.fierceadventurer.postservice.service.Impl;
 
+import com.fierceadventurer.postservice.client.SocialAccountClient;
 import com.fierceadventurer.postservice.dto.CreatePostVariantRequestDto;
 import com.fierceadventurer.postservice.dto.PostVariantResponseDto;
 import com.fierceadventurer.postservice.dto.UpdatePostVariantRequestDto;
@@ -30,10 +31,12 @@ public class PostVariantServiceImpl implements PostVariantService {
     private final PostVariantMapper postVariantMapper;
     private final MediaAssetRepository mediaAssetRepository;
     private final KafkaTemplate<String, VariantReadyForSchedulingEvent> kafkaTemplate;
+    private final SocialAccountClient socialAccountClient;
 
     @Override
     @Transactional
     public PostVariantResponseDto createNewVariant(UUID postId, CreatePostVariantRequestDto createDto) {
+        socialAccountClient.validateSocialAccount(createDto.getSocialAccountId());
        Post post = postRepository.findById(postId).orElseThrow(
                ()-> new ResourceNotFoundException("Cannot create a variant for non existing post with id: " + postId));
         PostVariant variant = postVariantMapper.toEntity(createDto);
