@@ -18,7 +18,7 @@ import java.util.UUID;
 
 public class PublishAttempt {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID attemptId;
 
     @ManyToOne(fetch = FetchType.LAZY)
