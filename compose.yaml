@@ -1,0 +1,110 @@
+services:
+  # --- Messaging Infrastructure ---
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.3.2
+    container_name: zookeeper
+    networks:
+      - social_media_net
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+
+  kafka:
+    image: confluentinc/cp-kafka:7.3.2
+    container_name: kafka
+    networks:
+      - social_media_net
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka:29092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CREATE_TOPICS: "variant-scheduling-topic:1:1,variant-immediate-publish-topic:1:1"
+
+  # --- Databases ---
+  post-db:
+    image: postgres:15
+    container_name: post-db
+    environment:
+      - POSTGRES_USER=admin1
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=post-service-db
+    ports:
+      - "5000:5432"
+    volumes:
+      - post-data:/var/lib/postgresql/data
+    networks:
+      - social_media_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin1 -d post_service_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  scheduler-db:
+    image: postgres:15
+    container_name: scheduler-db
+    environment:
+      - POSTGRES_USER=admin2
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=scheduler-service-db
+    ports:
+      - "5001:5432"
+    volumes:
+      - scheduler-data:/var/lib/postgresql/data
+    networks:
+      - social_media_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin2 -d scheduler_service_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # --- Application Services ---
+  post-service:
+    build: ./post-service
+    container_name: post-service
+    depends_on:
+      post-db:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://post-db:5432/post-service-db
+      - SPRING_DATASOURCE_USERNAME=admin1
+      - SPRING_DATASOURCE_PASSWORD=password
+      - SPRING_KAFKA_PRODUCER_BOOTSTRAP_SERVERS=kafka:29092
+    networks:
+      - social_media_net
+
+  scheduler-service:
+    build: ./scheduler-service
+    container_name: scheduler-service
+    depends_on:
+      scheduler-db:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://scheduler-db:5432/scheduler-service-db
+      - SPRING_DATASOURCE_USERNAME=admin2
+      - SPRING_DATASOURCE_PASSWORD=password
+      - SPRING_KAFKA_CONSUMER_BOOTSTRAP_SERVERS=kafka:29092
+    networks:
+      - social_media_net
+
+volumes:
+  post-data:
+  scheduler-data:
+
+networks:
+  social_media_net:
+    driver: bridge
