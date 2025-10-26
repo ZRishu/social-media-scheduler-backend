@@ -77,6 +77,25 @@ services:
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U admin3 -d social_account_service_db" ]
 
+  analytics-db:
+    image: postgres:15
+    container_name: analytics-db
+    environment:
+      - POSTGRES_USER=admin4
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=analytics-service-db
+    ports:
+      - "5003:5432"
+    volumes:
+      - analytics-data:/var/lib/postgresql/data
+    networks:
+      - social_media_net
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U admin4 -d analytics_service_db" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # --- Application Services ---
   post-service:
     build: ./post-service
@@ -139,6 +158,7 @@ volumes:
   post-data:
   scheduler-data:
   social-account-data:
+  analytics-data:
 
 networks:
   social_media_net:

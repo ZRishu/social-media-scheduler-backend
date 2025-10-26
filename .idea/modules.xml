@@ -3,7 +3,6 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/Social media scheduler.iml" filepath="$PROJECT_DIR$/Social media scheduler.iml" />
-      <module fileurl="file://$PROJECT_DIR$/post-service/post-service.iml" filepath="$PROJECT_DIR$/post-service/post-service.iml" />
       <module fileurl="file://$PROJECT_DIR$/scheduler-service/scheduler-service.iml" filepath="$PROJECT_DIR$/scheduler-service/scheduler-service.iml" />
     </modules>
   </component>
