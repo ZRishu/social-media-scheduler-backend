@@ -10,4 +10,6 @@ import java.util.UUID;
 @Repository
 public interface OptimalTimeSlotRepository extends JpaRepository<OptimalTimeSlot, UUID> {
     List<OptimalTimeSlot> findBySocialAccountIdOrderByEngagementScoreDesc(UUID socialAccountId);
+
+    void deleteAllBySocialAccountId(UUID socialAccountId);
 }

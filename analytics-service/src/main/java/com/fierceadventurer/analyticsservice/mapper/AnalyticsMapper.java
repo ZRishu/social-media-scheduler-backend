@@ -20,8 +20,12 @@ public interface AnalyticsMapper {
     @Mapping(target = "updatedAt", ignore = true)
     AnalysisJob toEntity(AccountCreatedEvent event);
 
+//    @Mapping(target = "id" , ignore = true)
+//    @Mapping(target = "socialAccountId" , ignore = true)
     AnalysisJobDto toDto(AnalysisJob job);
 
+//    @Mapping(target = "id" , ignore = true)
+//    @Mapping(target = "socialAccountId" , ignore = true)
     OptimalTimeSlotDto toDto(OptimalTimeSlot slot);
 
     List<OptimalTimeSlotDto> toDtoList(List<OptimalTimeSlot> slots);
