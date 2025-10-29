@@ -7,6 +7,8 @@ services:
       - social_media_net
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
 
   kafka:
     image: confluentinc/cp-kafka:7.3.2
@@ -22,6 +24,7 @@ services:
       KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka:29092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_CREATE_TOPICS: "variant-scheduling-topic:1:1,variant-immediate-publish-topic:1:1"
 
@@ -32,7 +35,7 @@ services:
     environment:
       - POSTGRES_USER=admin1
       - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=post-service-db
+      - POSTGRES_DB=post_service_db
     ports:
       - "5000:5432"
     volumes:
@@ -41,9 +44,6 @@ services:
       - social_media_net
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U admin1 -d post_service_db"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   scheduler-db:
     image: postgres:15
@@ -51,7 +51,7 @@ services:
     environment:
       - POSTGRES_USER=admin2
       - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=scheduler-service-db
+      - POSTGRES_DB=scheduler_service_db
     ports:
       - "5001:5432"
     volumes:
@@ -60,6 +60,38 @@ services:
       - social_media_net
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U admin2 -d scheduler_service_db"]
+
+  social-account-db:
+    image: postgres:15
+    container_name: social-account-db
+    environment:
+      - POSTGRES_USER=admin3
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=social_account_service_db
+    ports:
+      - "5002:5432"
+    volumes:
+      - social-account-data:/var/lib/postgresql/data
+    networks:
+      - social_media_net
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U admin3 -d social_account_service_db" ]
+
+  analytics-db:
+    image: postgres:15
+    container_name: analytics-db
+    environment:
+      - POSTGRES_USER=admin4
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=analytics-service-db
+    ports:
+      - "5003:5432"
+    volumes:
+      - analytics-data:/var/lib/postgresql/data
+    networks:
+      - social_media_net
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U admin4 -d analytics_service_db" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -74,12 +106,14 @@ services:
       kafka:
         condition: service_started
     ports:
-      - "8082:8082"
+      - "8080:8080"
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://post-db:5432/post-service-db
+      - SERVER_PORT=8080
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://post-db:5432/post_service_db
       - SPRING_DATASOURCE_USERNAME=admin1
       - SPRING_DATASOURCE_PASSWORD=password
-      - SPRING_KAFKA_PRODUCER_BOOTSTRAP_SERVERS=kafka:29092
+      - KAFKA_URL=kafka:29092
+      - CLIENTS_SOCIAL_ACCOUNT_SERVICE_URL=http://social-account-service:8080
     networks:
       - social_media_net
 
@@ -92,18 +126,39 @@ services:
       kafka:
         condition: service_started
     ports:
-      - "8081:8081"
+      - "8081:8080"
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://scheduler-db:5432/scheduler-service-db
+      - SERVER_PORT=8080
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://scheduler-db:5432/scheduler_service_db
       - SPRING_DATASOURCE_USERNAME=admin2
       - SPRING_DATASOURCE_PASSWORD=password
-      - SPRING_KAFKA_CONSUMER_BOOTSTRAP_SERVERS=kafka:29092
+      - KAFKA_URL=kafka:29092
+      - CLIENTS_SOCIAL_ACCOUNT_SERVICE_URL=http://social-account-service:8080
+      - KAFKA_CLIENTID=scheduler-consumer-docker-1
+    networks:
+      - social_media_net
+
+  social-account-service:
+    build: ./social-account-service
+    container_name: social-account-service
+    depends_on:
+      social-account-db:
+        condition: service_healthy
+    ports:
+      - "8082:8080"
+    environment:
+      - SERVER_PORT=8080
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://social-account-db:5432/social_account_service_db
+      - SPRING_DATASOURCE_USERNAME=admin3
+      - SPRING_DATASOURCE_PASSWORD=password
     networks:
       - social_media_net
 
 volumes:
   post-data:
   scheduler-data:
+  social-account-data:
+  analytics-data:
 
 networks:
   social_media_net:

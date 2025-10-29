@@ -1,5 +1,6 @@
 package com.fierceadventurer.schedulerservice.service.impl;
 
+import com.fierceadventurer.schedulerservice.client.SocialAccountClient;
 import com.fierceadventurer.schedulerservice.dto.ScheduledJobDto;
 import com.fierceadventurer.schedulerservice.dto.UpdateJobRequestDto;
 import com.fierceadventurer.schedulerservice.entities.PublishAttempt;
@@ -7,13 +8,14 @@ import com.fierceadventurer.schedulerservice.entities.ScheduledJob;
 import com.fierceadventurer.schedulerservice.enums.AttemptStatus;
 import com.fierceadventurer.schedulerservice.enums.JobStatus;
 import com.fierceadventurer.schedulerservice.events.VariantReadyForSchedulingEvent;
+import com.fierceadventurer.schedulerservice.exceptions.InvalidJobStatusException;
+import com.fierceadventurer.schedulerservice.exceptions.ResourceNotFoundException;
 import com.fierceadventurer.schedulerservice.mappers.SchedulerMapper;
 import com.fierceadventurer.schedulerservice.repository.PublishAttemptRepository;
 import com.fierceadventurer.schedulerservice.repository.ScheduledJobRepository;
 import com.fierceadventurer.schedulerservice.service.JobExecutionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.common.errors.ResourceNotFoundException;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,12 +32,14 @@ public class JobExecutionServiceImpl implements JobExecutionService {
     private final ScheduledJobRepository jobRepository;
     private final PublishAttemptRepository attemptRepository;
     private final SchedulerMapper  schedulerMapper;
+    private final SocialAccountClient socialAccountClient;
 
     @Override
     @Scheduled(fixedRate = 60000)
-    public void findAndExecutionDueJobs() {
+    public void findAndExecuteDueJobs() {
         log.info("Scheduler running: Checking for due jobs...");
-        List<ScheduledJob> dueJobs = jobRepository.findTop10ByStatusAndScheduledAtBeforeAndDeletedAtIsNullOrderByScheduledAtAsc
+        List<ScheduledJob> dueJobs = jobRepository.
+                findTop10ByStatusAndScheduledAtBeforeAndDeletedAtIsNullOrderByScheduledAtAsc
                 (JobStatus.PENDING , LocalDateTime.now());
         if(dueJobs.isEmpty()) {
             return;
@@ -47,23 +51,53 @@ public class JobExecutionServiceImpl implements JobExecutionService {
     }
 
     @Transactional
-
     public void processJob(ScheduledJob job) {
         job.setStatus(JobStatus.PROCESSING);
         jobRepository.save(job);
-
-        VariantReadyForSchedulingEvent eventData = new VariantReadyForSchedulingEvent();
-        eventData.setVariantId(job.getPostVariantId());
-//        eventData.setSocialAccountId(job.getSocialAccountId());
-        eventData.setSocialAccountId(UUID.randomUUID());
-        executePublishing(job , eventData);
+        executePublishing(job);
     }
 
-    private void executePublishing(ScheduledJob job, VariantReadyForSchedulingEvent eventData) {
+
+    @Override
+    @Transactional
+    public void publishNow(VariantReadyForSchedulingEvent event) {
+        executePublishing(event);
+    }
+
+    public void executePublishing(ScheduledJob job){
         PublishAttempt attempt = new PublishAttempt();
-        if(job != null){
-            attempt.setScheduledJob(job);
+        attempt.setScheduledJob(job);
+        attempt.setPostVariantId(job.getPostVariantId());
+        attempt.setSocialAccountId(job.getSocialAccountId());
+        attempt.setStatus(AttemptStatus.IN_PROGRESS);
+        attempt.setStartedAt(LocalDateTime.now());
+        attemptRepository.save(attempt);
+
+        try {
+            socialAccountClient.checkAndDecrementQuota(job.getSocialAccountId());
+            log.info("Simulating publication for Variant {}", job.getPostVariantId());
+            // In a real application, you would use data from the job object here:
+            // socialMediaApiClient.post(job.getContent(), job.getMediaUrls(), ...);
+            Thread.sleep(1000);
+            attempt.setStatus(AttemptStatus.SUCCESS);
+            job.setStatus(JobStatus.COMPLETED);
         }
+        catch (Exception e) {
+            log.error("Job for variant {} failed with an exception." ,  job.getPostVariantId(), e);
+            attempt.setStatus(AttemptStatus.FAILURE);
+            job.setStatus(JobStatus.FAILED);
+            job.setLastError(e.getMessage());
+        }
+        finally {
+            attempt.setCompletedAt(LocalDateTime.now());
+            attemptRepository.save(attempt);
+            jobRepository.save(job);
+        }
+    }
+
+
+    public void executePublishing(VariantReadyForSchedulingEvent eventData) {
+        PublishAttempt attempt = new PublishAttempt();
         attempt.setPostVariantId(eventData.getVariantId());
         attempt.setSocialAccountId(eventData.getSocialAccountId());
         attempt.setStatus(AttemptStatus.IN_PROGRESS);
@@ -71,34 +105,21 @@ public class JobExecutionServiceImpl implements JobExecutionService {
         attemptRepository.save(attempt);
 
         try {
+            socialAccountClient.checkAndDecrementQuota(eventData.getSocialAccountId());
             log.info("Simulating publication for Variant {}", eventData.getVariantId());
             Thread.sleep(1000);
-            attempt.setCompletedAt(LocalDateTime.now());
             attempt.setStatus(AttemptStatus.SUCCESS);
-            attemptRepository.save(attempt);
-            if(job != null){
-                job.setStatus(JobStatus.COMPLETED);
-                jobRepository.save(job);
-            }
-        }catch (Exception e){
-            log.error("Job for variant {} execution failed.", eventData.getVariantId(), e.getMessage());
-            attempt.setCompletedAt(LocalDateTime.now());
+        }
+        catch (Exception e){
+            log.error("Instant publish for variant{} failed.", eventData.getVariantId(), e.getMessage());
             attempt.setStatus(AttemptStatus.FAILURE);
+        }
+        finally {
+            attempt.setCompletedAt(LocalDateTime.now());
             attemptRepository.save(attempt);
-            if(job != null){
-                job.setStatus(JobStatus.FAILED);
-                job.setLastError(e.getMessage());
-                jobRepository.save(job);
-            }
         }
     }
 
-
-
-    @Override
-    public void publishNow(VariantReadyForSchedulingEvent event) {
-        executePublishing(null , event);
-    }
 
     @Override
     @Transactional
@@ -120,12 +141,15 @@ public class JobExecutionServiceImpl implements JobExecutionService {
     }
 
     @Override
+    @Transactional
     public ScheduledJobDto repostJob(UUID jobId) {
         log.info("Attempting to repost job with ID {}", jobId);
         ScheduledJob job = jobRepository.findById(jobId).orElseThrow(
                 ()-> new ResourceNotFoundException("Job not found with id " + jobId)
-
         );
+        if(job.getDeletedAt() == null){
+            throw new InvalidJobStatusException("this Job was not cancelled and cannot be reposted");
+        }
 
         job.setDeletedAt(null);
         job.setStatus(JobStatus.PENDING);

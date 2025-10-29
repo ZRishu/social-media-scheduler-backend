@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.UUID;
 @Getter
 @Setter
-@AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "media_assets")
 @Entity

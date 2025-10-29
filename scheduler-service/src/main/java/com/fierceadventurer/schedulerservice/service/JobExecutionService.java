@@ -7,7 +7,7 @@ import com.fierceadventurer.schedulerservice.events.VariantReadyForSchedulingEve
 import java.util.UUID;
 
 public interface JobExecutionService {
-    void findAndExecutionDueJobs();
+    void findAndExecuteDueJobs();
     void publishNow(VariantReadyForSchedulingEvent event);
     void cancelJob(UUID jobId);
     ScheduledJobDto repostJob(UUID jobId);
