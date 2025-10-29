@@ -2,7 +2,7 @@
 
 **AI-Powered Social Media Management for Modern Creators**
 
-[![License: BSL](https://img.shields.io/badge/License-BSL-yellow.svg)](https://mariadb.com/bsl11/)
+[![License: BSL](https://img.shields.io/badge/License-BSL-0630F0.svg)](https://mariadb.com/bsl11/)
 [![Java](https://img.shields.io/badge/Java-21+-orange.svg)](https://www.oracle.com/java/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5+-brightgreen.svg)](https://spring.io/projects/spring-boot)
 [![React](https://img.shields.io/badge/React-18+-61DAFB.svg)](https://reactjs.org/)
@@ -192,6 +192,6 @@ We welcome contributions! Here's how:
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the BSL License - see the [LICENSE](LICENSE) file for details.
 
 ---
