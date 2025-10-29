@@ -16,7 +16,7 @@ public class AnalysisJobConsumer {
     private final AnalysisJobRepository analysisJobRepository;
     private final AnalyticsMapper analyticsMapper;
 
-    @KafkaListener(topics = "social-account-created-topic", groupId = "analytics-group")
+    @KafkaListener(topics = "socialn-account-created-topic", groupId = "analytics-group")
     public void consumeAccountCreatedEvent(AccountCreatedEvent event){
         log.info("Received new account event for socialAccountId {}", event.getSocialAccountId());
         if(analysisJobRepository.findBySocialAccountId(event.getSocialAccountId()).isPresent()){
