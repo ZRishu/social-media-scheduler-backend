@@ -1,5 +1,6 @@
 package com.fierceadventurer.postservice.service.Impl;
 
+import com.fierceadventurer.postservice.client.AnalyticsClient;
 import com.fierceadventurer.postservice.client.SocialAccountClient;
 import com.fierceadventurer.postservice.dto.CreatePostVariantRequestDto;
 import com.fierceadventurer.postservice.dto.PostVariantResponseDto;
@@ -19,6 +20,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -32,6 +34,7 @@ public class PostVariantServiceImpl implements PostVariantService {
     private final MediaAssetRepository mediaAssetRepository;
     private final KafkaTemplate<String, VariantReadyForSchedulingEvent> kafkaTemplate;
     private final SocialAccountClient socialAccountClient;
+    private final AnalyticsClient analyticsClient;
 
     @Override
     @Transactional
@@ -42,6 +45,11 @@ public class PostVariantServiceImpl implements PostVariantService {
         PostVariant variant = postVariantMapper.toEntity(createDto);
         variant.setPost(post);
 
+        if(variant.getScheduledAt() == null) {
+            LocalDateTime bestTime = analyticsClient.getNextBestTime(createDto.getSocialAccountId())
+                    .getNextBestTime();
+            variant.setScheduledAt(bestTime);
+        }
         if(createDto.getMediaAssetIds() != null
                 && !createDto.getMediaAssetIds().isEmpty()) {
             List<MediaAsset> mediaAssets= mediaAssetRepository.findAllById(createDto

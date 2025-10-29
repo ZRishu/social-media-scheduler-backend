@@ -12,4 +12,5 @@ public interface SocialAccountService {
     void unsuspendAccount(UUID accountId);
     void deleteSocialAccount(UUID accountId);
     void markedAccountTokenExpired(UUID accountId);
+    String getActiveAccessToken(UUID accountId);
 }
