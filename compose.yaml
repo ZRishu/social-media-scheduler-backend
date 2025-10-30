@@ -9,7 +9,6 @@ services:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
 
-
   kafka:
     image: confluentinc/cp-kafka:7.3.2
     container_name: kafka
@@ -26,7 +25,7 @@ services:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka:29092
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_CREATE_TOPICS: "variant-scheduling-topic:1:1,variant-immediate-publish-topic:1:1"
+      KAFKA_CREATE_TOPICS: "variant-scheduling-topic:1:1,variant-immediate-publish-topic:1:1,social-account-created-topic:1:1"
 
   # --- Databases ---
   post-db:
@@ -91,7 +90,7 @@ services:
     networks:
       - social_media_net
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U admin4 -d analytics_service_db" ]
+      test: [ "CMD-SHELL", "pg_isready -U admin4 -d analytics-service-db" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -105,6 +104,9 @@ services:
         condition: service_healthy
       kafka:
         condition: service_started
+      social-account-service: { condition: service_started }
+      analytics-service: { condition: service_started }
+
     ports:
       - "8080:8080"
     environment:
@@ -114,6 +116,7 @@ services:
       - SPRING_DATASOURCE_PASSWORD=password
       - KAFKA_URL=kafka:29092
       - CLIENTS_SOCIAL_ACCOUNT_SERVICE_URL=http://social-account-service:8080
+      - CLIENTS_ANALYTICS_SERVICE_URL=http://analytics-service:8080
     networks:
       - social_media_net
 
@@ -125,6 +128,7 @@ services:
         condition: service_healthy
       kafka:
         condition: service_started
+      social-account-service: { condition: service_started }
     ports:
       - "8081:8080"
     environment:
@@ -135,6 +139,7 @@ services:
       - KAFKA_URL=kafka:29092
       - CLIENTS_SOCIAL_ACCOUNT_SERVICE_URL=http://social-account-service:8080
       - KAFKA_CLIENTID=scheduler-consumer-docker-1
+      - SPRING_JMX_ENABLED=false
     networks:
       - social_media_net
 
@@ -151,6 +156,28 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://social-account-db:5432/social_account_service_db
       - SPRING_DATASOURCE_USERNAME=admin3
       - SPRING_DATASOURCE_PASSWORD=password
+    networks:
+      - social_media_net
+
+  analytics-service:
+    build: ./analytics-service
+    container_name: analytics-service
+    depends_on:
+      analytics-db:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+      social-account-service:
+        condition: service_started
+    ports:
+      - "8083:8080"
+    environment:
+      - SERVER_PORT=8080
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://analytics-db:5432/analytics-service-db
+      - SPRING_DATASOURCE_USERNAME=admin4
+      - SPRING_DATASOURCE_PASSWORD=password
+      - KAFKA_URL=kafka:29092
+      - CLIENTS_SOCIAL_ACCOUNT_SERVICE_URL=http://social-account-service:8080
     networks:
       - social_media_net
 
