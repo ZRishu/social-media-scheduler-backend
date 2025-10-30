@@ -1,0 +1,55 @@
+# -----------------------------------------------------------------
+# Example Environment Variables for Local Development
+# -----------------------------------------------------------------
+# These variables are used when running the services locally from an IDE.
+# They connect to the infrastructure (databases, Kafka) running in Docker.
+#
+# You must set these in your IDE's Run/Debug Configuration for EACH service.
+# -----------------------------------------------------------------
+
+
+# === Shared Variables (Used by multiple services) ===
+
+# URL for the Kafka broker (points to the port exposed on your host)
+KAFKA_URL=localhost:9092
+
+# Feign Client URLs (for local IDE-to-container communication)
+CLIENTS_SOCIAL_ACCOUNT_SERVICE_URL=http://localhost:8082
+CLIENTS_ANALYTICS_SERVICE_URL=http://localhost:8083
+
+
+# === post-service ===
+# (Set these in the Run Configuration for PostServiceApplication)
+SERVER_PORT=8080
+POST_SERVICE_DB_URL=jdbc:postgresql://localhost:5000/post_service_db
+POST_SERVICE_DB_USERNAME=admin1
+POST_SERVICE_DB_PASSWORD=password
+# (Also needs KAFKA_URL, CLIENTS_SOCIAL_ACCOUNT_SERVICE_URL, CLIENTS_ANALYTICS_SERVICE_URL)
+
+
+# === scheduler-service ===
+# (Set these in the Run Configuration for SchedulerServiceApplication)
+SERVER_PORT=8081
+SCHEDULER_SERVICE_DB_URL=jdbc:postgresql://localhost:5001/scheduler_service_db
+SCHEDULER_SERVICE_DB_USERNAME=admin2
+SCHEDULER_SERVICE_DB_PASSWORD=password
+KAFKA_CLIENTID=local-scheduler-client
+# (Also needs KAFKA_URL, CLIENTS_SOCIAL_ACCOUNT_SERVICE_URL)
+
+
+# === social-account-service ===
+# (Set these in the Run Configuration for SocialAccountServiceApplication)
+SERVER_PORT=8082
+SOCIAL_ACCOUNT_SERVICE_DB_URL=jdbc:postgresql://localhost:5002/social_account_service_db
+SOCIAL_ACCOUNT_SERVICE_DB_USERNAME=admin3
+SOCIAL_ACCOUNT_SERVICE_DB_PASSWORD=password
+# (This service does not need Kafka or Feign client URLs)
+
+
+# === analytics-service ===
+# (Set these in the Run Configuration for AnalyticsServiceApplication)
+SERVER_PORT=8083
+ANALYTICS_SERVICE_DB_URL=jdbc:postgresql://localhost:5003/analytics_service_db
+ANALYTICS_SERVICE_DB_USERNAME=admin4
+ANALYTICS_SERVICE_DB_PASSWORD=password
+# (Also needs KAFKA_URL, CLIENTS_SOCIAL_ACCOUNT_SERVICE_URL)
