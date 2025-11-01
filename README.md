@@ -101,6 +101,7 @@ A comprehensive social media management platform that helps creators, marketers,
 | **Analytics Service** | Metrics collection, reporting | Spring Boot |
 | **AI Service** | Best time, hashtags, variations | Spring Boot |
 | **Notification Service** | Multi-channel notifications | Spring Boot, FCM |
+| **Media Service** | Stores to media assets of file | Spring Boot, AMAZON S3 |
 
 ---
 
@@ -124,7 +125,8 @@ cd social-media-scheduler-backend
 docker-compose up -d
 
 # Configure environment variables
-cp .env.example .env
+change .env.example to .env
+Set environment variables in services according to the requirements
 # Edit .env with your social platform API keys
 
 # Start frontend (new terminal)
