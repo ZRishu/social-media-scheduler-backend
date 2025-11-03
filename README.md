@@ -2,7 +2,7 @@
 
 **AI-Powered Social Media Management for Modern Creators**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: BSL](https://img.shields.io/badge/License-BSL-0630F0.svg)](https://mariadb.com/bsl11/)
 [![Java](https://img.shields.io/badge/Java-21+-orange.svg)](https://www.oracle.com/java/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5+-brightgreen.svg)](https://spring.io/projects/spring-boot)
 [![React](https://img.shields.io/badge/React-18+-61DAFB.svg)](https://reactjs.org/)
@@ -101,6 +101,7 @@ A comprehensive social media management platform that helps creators, marketers,
 | **Analytics Service** | Metrics collection, reporting | Spring Boot |
 | **AI Service** | Best time, hashtags, variations | Spring Boot |
 | **Notification Service** | Multi-channel notifications | Spring Boot, FCM |
+| **Media Service** | Stores to media assets of file | Spring Boot, AMAZON S3 |
 
 ---
 
@@ -124,7 +125,8 @@ cd social-media-scheduler-backend
 docker-compose up -d
 
 # Configure environment variables
-cp .env.example .env
+change .env.example to .env
+Set environment variables in services according to the requirements
 # Edit .env with your social platform API keys
 
 # Start frontend (new terminal)
@@ -192,6 +194,6 @@ We welcome contributions! Here's how:
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the BSL License - see the [LICENSE](LICENSE) file for details.
 
 ---
