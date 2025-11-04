@@ -2,6 +2,7 @@ package com.fierceadventurer.userservice.controllers;
 
 import com.fierceadventurer.userservice.dto.UpdateUserRequestDto;
 import com.fierceadventurer.userservice.dto.UserResponseDto;
+import com.fierceadventurer.userservice.enums.UserStatus;
 import com.fierceadventurer.userservice.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -54,8 +55,9 @@ public class UserController {
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Page<UserResponseDto>> getAllUsers(Pageable pageable) {
-        Page<UserResponseDto> users = userService.getAllUsers(pageable);
+    public ResponseEntity<Page<UserResponseDto>> getAllUsers(Pageable pageable,
+                                                             @RequestParam(required = false)UserStatus status) {
+        Page<UserResponseDto> users = userService.getAllUsers(pageable , status);
         return ResponseEntity.ok(users);
     }
 

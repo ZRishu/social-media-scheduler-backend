@@ -55,14 +55,22 @@ public class UserServiceImpl implements UserService {
 
         user.setStatus(UserStatus.DELETED);
         user.setEmail(user.getId() + "@deleted.user");
+        user.setDisplayName("Deleted User");
         userRepository.save(user);
     }
 
     @Override
-    @Transactional
-    public Page<UserResponseDto> getAllUsers(Pageable pageable) {
+    @Transactional(readOnly = true)
+    public Page<UserResponseDto> getAllUsers(Pageable pageable, UserStatus status) {
         log.info("Fetching all users for Pageable: {}", pageable.getPageNumber());
-        Page<User> userPage = userRepository.findAll(pageable);
+        Page<User> userPage;
+        if(status != null){
+            log.info("Filtering all users for status: {}", status);
+            userPage = userRepository.findByStatus(status, pageable);
+        }
+        else {
+            userPage = userRepository.findAll(pageable);
+        }
         return userPage.map(userMapper::toDto);
     }
 
@@ -86,5 +94,10 @@ public class UserServiceImpl implements UserService {
 
         user.setStatus(UserStatus.ACTIVE);
         userRepository.save(user);
+    }
+
+    private User findUserById(UUID userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
     }
 }

@@ -14,18 +14,18 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class KeyClockEventListener {
+public class KeycloakEventListener {
 
     private final UserRepository userRepository;
     private final UserMapper userMapper;
 
-    @KafkaListener(topics = "keyClock.user.created", groupId = "user-service-group")
+    @KafkaListener(topics = "keyCloak.user.created", groupId = "user-service-group")
     @Transactional
     public void handleUserCreation(KeyclockUserCreatedEvent event){
         log.info("Received new user creation event for userId: {}", event.getUserId());
 
-        if(userRepository.existsById(event.getUserId())){
-            log.warn("User profile for {} already exists. Skipping creation", event.getUserId());
+        if(userRepository.existsByEmail(event.getEmail())){
+            log.warn("User profile for {} already exists. Skipping creation", event.getEmail());
             return;
         }
 

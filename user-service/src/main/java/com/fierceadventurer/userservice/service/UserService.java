@@ -2,6 +2,7 @@ package com.fierceadventurer.userservice.service;
 
 import com.fierceadventurer.userservice.dto.UpdateUserRequestDto;
 import com.fierceadventurer.userservice.dto.UserResponseDto;
+import com.fierceadventurer.userservice.enums.UserStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -15,7 +16,7 @@ public interface UserService {
 
     void deleteUser(UUID userId);
 
-    Page<UserResponseDto> getAllUsers(Pageable pageable);
+    Page<UserResponseDto> getAllUsers(Pageable pageable, UserStatus status);
 
     void suspendUser(UUID userId);
 
