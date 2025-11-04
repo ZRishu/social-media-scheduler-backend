@@ -4,12 +4,12 @@ import com.fierceadventurer.userservice.dto.UpdateUserRequestDto;
 import com.fierceadventurer.userservice.dto.UserResponseDto;
 import com.fierceadventurer.userservice.entity.User;
 import com.fierceadventurer.userservice.enums.UserStatus;
+import com.fierceadventurer.userservice.exception.ResourceNotFoundException;
 import com.fierceadventurer.userservice.mapper.UserMapper;
 import com.fierceadventurer.userservice.repository.UserRepository;
 import com.fierceadventurer.userservice.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.common.errors.ResourceNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -22,7 +22,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
     private final UserMapper userMapper;
 
     @Override
