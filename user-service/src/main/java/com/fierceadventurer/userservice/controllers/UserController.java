@@ -2,17 +2,16 @@ package com.fierceadventurer.userservice.controllers;
 
 import com.fierceadventurer.userservice.dto.UpdateUserRequestDto;
 import com.fierceadventurer.userservice.dto.UserResponseDto;
-import com.fierceadventurer.userservice.entity.User;
 import com.fierceadventurer.userservice.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -22,58 +21,60 @@ public class UserController {
 
     private final UserService userService;
 
-    @GetMapping("/{userId}")
-    public ResponseEntity<UserResponseDto> getUserProfile(@PathVariable UUID userId) {
 
-        return ResponseEntity.ok().build();
-    }
-
-    @PutMapping("/{userId}")
-    public ResponseEntity<UserResponseDto> updateUserProfile(
-            @PathVariable UUID userId,
-            @Valid @RequestBody UpdateUserRequestDto requestDto) {
-        return ResponseEntity.ok().build();
-    }
 
     @GetMapping("/me")
-    public ResponseEntity<UserResponseDto> getMyProfile() {
-        UserResponseDto user = userService.getUserById(UUID.randomUUID());
+    public ResponseEntity<UserResponseDto> getMyProfile(
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        UserResponseDto user = userService.getUserById(userId);
         return ResponseEntity.ok(user);
 
     }
 
     @PutMapping("/me")
     public ResponseEntity<UserResponseDto> updateMyProfile(
+            @AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody UpdateUserRequestDto requestDto){
-        UserResponseDto updatedUser = userService.updateUser(UUID.randomUUID(), requestDto);
+
+        UUID userId = UUID.fromString(jwt.getSubject());
+        UserResponseDto updatedUser = userService.updateUser(userId, requestDto);
         return ResponseEntity.ok(updatedUser);
     }
 
     @DeleteMapping("/me")
-    public ResponseEntity<Void> deleteMyAccount() {
-        userService.deleteUser(UUID.randomUUID());
+    public ResponseEntity<Void> deleteMyAccount(
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        userService.deleteUser(userId);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Page<UserResponseDto>> getAllUsers(Pageable pageable) {
         Page<UserResponseDto> users = userService.getAllUsers(pageable);
         return ResponseEntity.ok(users);
     }
 
     @GetMapping("/{userId}")
-    public ResponseEntity<UserResponseDto> getUserByUserId(@PathVariable UUID userId) {
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserResponseDto> getUserById(@PathVariable UUID userId) {
         UserResponseDto user = userService.getUserById(userId);
         return ResponseEntity.ok(user);
     }
 
     @PostMapping("/{userId}/suspend")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> suspendUser(@PathVariable UUID userId) {
         userService.suspendUser(userId);
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/{userId}/unsuspend")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> unsuspendUser(@PathVariable UUID userId) {
         userService.activateUser(userId);
         return ResponseEntity.ok().build();
