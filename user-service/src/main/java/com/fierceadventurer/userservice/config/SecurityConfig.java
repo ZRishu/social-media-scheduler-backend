@@ -22,7 +22,7 @@ public class SecurityConfig {
                         .anyRequest().denyAll()
                 )
                 .oauth2ResourceServer(oauth2 ->
-                        oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(new KeyclockJwtConverter())
+                        oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(new KeycloakJwtConverter())
                                 )
                 )
                                 .sessionManagement(session -> session

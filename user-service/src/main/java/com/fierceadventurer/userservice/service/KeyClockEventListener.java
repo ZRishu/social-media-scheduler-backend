@@ -2,7 +2,7 @@ package com.fierceadventurer.userservice.service;
 
 import com.fierceadventurer.userservice.entity.User;
 import com.fierceadventurer.userservice.enums.UserStatus;
-import com.fierceadventurer.userservice.events.KeyClockUserCreatedEvent;
+import com.fierceadventurer.userservice.events.KeyclockUserCreatedEvent;
 import com.fierceadventurer.userservice.mapper.UserMapper;
 import com.fierceadventurer.userservice.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +21,7 @@ public class KeyClockEventListener {
 
     @KafkaListener(topics = "keyClock.user.created", groupId = "user-service-group")
     @Transactional
-    public void handleUserCreation(KeyClockUserCreatedEvent event){
+    public void handleUserCreation(KeyclockUserCreatedEvent event){
         log.info("Received new user creation event for userId: {}", event.getUserId());
 
         if(userRepository.existsById(event.getUserId())){

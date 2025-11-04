@@ -53,3 +53,10 @@ ANALYTICS_SERVICE_DB_URL=jdbc:postgresql://localhost:5003/analytics_service_db
 ANALYTICS_SERVICE_DB_USERNAME=admin4
 ANALYTICS_SERVICE_DB_PASSWORD=password
 # (Also needs KAFKA_URL, CLIENTS_SOCIAL_ACCOUNT_SERVICE_URL)
+
+#user-service
+SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5004/user_service_db
+SPRING_DATASOURCE_USERNAME=admin5
+SPRING_DATASOURCE_PASSWORD=password
+KAFKA_URL=localhost:9092
+KEYCLOAK_ISSUER_URI=http://localhost:8088/realms/user-service

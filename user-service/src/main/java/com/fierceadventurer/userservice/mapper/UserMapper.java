@@ -2,7 +2,7 @@ package com.fierceadventurer.userservice.mapper;
 
 import com.fierceadventurer.userservice.dto.UserResponseDto;
 import com.fierceadventurer.userservice.entity.User;
-import com.fierceadventurer.userservice.events.KeyClockUserCreatedEvent;
+import com.fierceadventurer.userservice.events.KeyclockUserCreatedEvent;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
@@ -14,7 +14,7 @@ public interface UserMapper {
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "createdAt" , ignore = true)
     @Mapping(target = "updatedAt",  ignore = true)
-    User toEntity(KeyClockUserCreatedEvent event);
+    User toEntity(KeyclockUserCreatedEvent event);
 
     UserResponseDto toDto(User user);
 }

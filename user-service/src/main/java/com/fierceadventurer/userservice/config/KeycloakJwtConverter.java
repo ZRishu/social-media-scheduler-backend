@@ -11,18 +11,18 @@ import java.util.Collection;
 import java.util.stream.Stream;
 
 
-public class KeyclockJwtConverter implements Converter<Jwt, AbstractAuthenticationToken> {
+public class KeycloakJwtConverter implements Converter<Jwt, AbstractAuthenticationToken> {
     private final JwtGrantedAuthoritiesConverter defaultGrantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
-    private final KeyclockRoleConverter keyclockRoleConverter = new KeyclockRoleConverter();
+    private final KeycloakRoleConverter keycloakRoleConverter = new KeycloakRoleConverter();
 
     @Override
     public AbstractAuthenticationToken convert(Jwt jwt) {
         Collection<GrantedAuthority> defaultAuthorities = defaultGrantedAuthoritiesConverter.convert(jwt);
 
-        Collection<GrantedAuthority> keyclockRoles = keyclockRoleConverter.convert(jwt);
+        Collection<GrantedAuthority> keycloakRoles = keycloakRoleConverter.convert(jwt);
 
         Collection<GrantedAuthority> allAuthorities = Stream.concat(
-                defaultAuthorities.stream(), keyclockRoles.stream()).toList();
+                defaultAuthorities.stream(), keycloakRoles.stream()).toList();
 
         String principalName = jwt.getClaimAsString("email");
         if(principalName == null) {
