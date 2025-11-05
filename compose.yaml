@@ -181,6 +181,8 @@ services:
       - KAFKA_CLIENTID=scheduler-consumer-docker-1
       - SPRING_JMX_ENABLED=false
       - KAFKA_URL=kafka:29092
+      - SPRING_JMX_ENABLED=false
+
     networks:
       - social_media_net
 
@@ -261,8 +263,6 @@ services:
       - SPRING_DATASOURCE_PASSWORD=password
     networks:
       - social_media_net
-
-
 
   keycloak:
     image: quay.io/keycloak/keycloak:latest
