@@ -155,7 +155,7 @@ services:
       - KAFKA_URL=kafka:29092
       - CLIENTS_SOCIAL_ACCOUNT_SERVICE_URL=http://social-account-service:8080
       - CLIENTS_ANALYTICS_SERVICE_URL=http://analytics-service:8080
-      - CLIENTS_MEDIA_SERVICE_URL=http://media-service:8080
+      - CLIENTS_MEDIA_STORAGE_SERVICE_URL=http://media-storage-service:8080
       - KEYCLOAK_ISSUER_URI=http://keycloak:8080/realms/user-service
     networks:
       - social_media_net

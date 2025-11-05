@@ -67,4 +67,4 @@ SERVER_PORT=8084
 MEDIA_STORAGE_DB_URL=jdbc:postgresql://localhost:5006/media_service_db
 MEDIA_STORAGE_DB_USERNAME=admin_media
 MEDIA_STORAGE_DB_PASSWORD=password
-CLIENTS_MEDIA_SERVICE_URL=http://localhost:8084
+CLIENTS_MEDIA_STORAGE_SERVICE_URL=http://localhost:8084
