@@ -25,6 +25,9 @@ public class Post {
     @Column(name = "id", updatable = false, nullable = false)
     private UUID id;
 
+    @Column(nullable = false, updatable = false)
+    private UUID userId;
+
     @Column(columnDefinition = "TEXT", nullable = false)
     private String title;
 

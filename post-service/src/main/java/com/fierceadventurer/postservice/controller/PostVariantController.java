@@ -8,8 +8,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 import java.util.UUID;
 
@@ -24,34 +25,46 @@ public class PostVariantController {
     @PostMapping
     public ResponseEntity<PostVariantResponseDto> createPostVariant(
             @PathVariable UUID postId ,
-            @Valid @RequestBody CreatePostVariantRequestDto createDto) {
-        PostVariantResponseDto createdVariant = postVariantService.createNewVariant(postId, createDto);
+            @Valid @RequestBody CreatePostVariantRequestDto createDto,
+            @AuthenticationPrincipal Jwt jwt) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        PostVariantResponseDto createdVariant = postVariantService.createNewVariant(postId,userId, createDto);
         return new ResponseEntity<>(createdVariant, HttpStatus.CREATED);
     }
 
     @GetMapping("/{variantId}")
     public ResponseEntity<PostVariantResponseDto> getPostVariantById(
-            @PathVariable UUID postId, @PathVariable UUID variantId) {
-        PostVariantResponseDto variant = postVariantService.getPostVariantById(postId, variantId);
+            @PathVariable UUID postId, @PathVariable UUID variantId,
+            @AuthenticationPrincipal Jwt jwt) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        PostVariantResponseDto variant = postVariantService.getPostVariantById(postId, userId, variantId);
         return ResponseEntity.ok(variant);
     }
 
     @PutMapping("/{variantId}")
     public ResponseEntity<PostVariantResponseDto> updatePostVariant(
-            @PathVariable UUID postId, @PathVariable UUID variantId, @Valid @RequestBody UpdatePostVariantRequestDto updateDto) {
-        PostVariantResponseDto updatedPost = postVariantService.updateExistingVariant(postId , variantId,updateDto );
+            @PathVariable UUID postId, @PathVariable UUID variantId,
+            @Valid @RequestBody UpdatePostVariantRequestDto updateDto,
+            @AuthenticationPrincipal Jwt jwt) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        PostVariantResponseDto updatedPost = postVariantService.updateExistingVariant(
+                postId ,userId, variantId,updateDto );
         return ResponseEntity.ok(updatedPost);
     }
 
     @GetMapping
-    public ResponseEntity<List<PostVariantResponseDto>> getAllPostVariants(@PathVariable UUID postId) {
-        List<PostVariantResponseDto> allVariants = postVariantService.getAllPostVariants(postId);
+    public ResponseEntity<List<PostVariantResponseDto>> getAllPostVariants(@PathVariable UUID postId,
+    @AuthenticationPrincipal Jwt jwt) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        List<PostVariantResponseDto> allVariants = postVariantService.getAllPostVariants(postId , userId);
         return ResponseEntity.ok(allVariants);
     }
 
     @DeleteMapping("/{variantId}")
-    public ResponseEntity<PostVariantResponseDto> deletePostVariantById(@PathVariable UUID postId, @PathVariable UUID variantId) {
-        postVariantService.deletePostVariantById(variantId);
+    public ResponseEntity<PostVariantResponseDto> deletePostVariantById(@PathVariable UUID postId, @PathVariable UUID variantId,
+                                                                        @AuthenticationPrincipal Jwt jwt) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        postVariantService.deletePostVariantById(postId, userId, variantId);
         return ResponseEntity.noContent().build();
     }
 }

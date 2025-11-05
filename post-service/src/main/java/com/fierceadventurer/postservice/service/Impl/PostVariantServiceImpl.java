@@ -9,6 +9,7 @@ import com.fierceadventurer.postservice.entity.MediaAsset;
 import com.fierceadventurer.postservice.entity.Post;
 import com.fierceadventurer.postservice.entity.PostVariant;
 import com.fierceadventurer.postservice.events.VariantReadyForSchedulingEvent;
+import com.fierceadventurer.postservice.exception.MediaAssetNotFoundException;
 import com.fierceadventurer.postservice.exception.ResourceNotFoundException;
 import com.fierceadventurer.postservice.mapper.PostVariantMapper;
 import com.fierceadventurer.postservice.repository.MediaAssetRepository;
@@ -17,6 +18,7 @@ import com.fierceadventurer.postservice.repository.PostVariantRepository;
 import com.fierceadventurer.postservice.service.PostVariantService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +26,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
+import static org.apache.kafka.common.requests.FetchMetadata.log;
 
 @Service
 @RequiredArgsConstructor
@@ -38,10 +42,23 @@ public class PostVariantServiceImpl implements PostVariantService {
 
     @Override
     @Transactional
-    public PostVariantResponseDto createNewVariant(UUID postId, CreatePostVariantRequestDto createDto) {
-        socialAccountClient.validateSocialAccount(createDto.getSocialAccountId());
-       Post post = postRepository.findById(postId).orElseThrow(
+    public PostVariantResponseDto createNewVariant(UUID postId, UUID userId, CreatePostVariantRequestDto createDto) {
+
+        try{
+            socialAccountClient.validateAccountOwnerShip(createDto.getSocialAccountId(), userId);
+        }
+        catch(Exception e){
+            throw new AccessDeniedException("User does not own social account: " + createDto.getSocialAccountId());
+        }
+
+        Post post = postRepository.findById(postId).orElseThrow(
                ()-> new ResourceNotFoundException("Cannot create a variant for non existing post with id: " + postId));
+
+        if(!post.getUserId().equals(userId)){
+            log.warn("User {} attempted to create variant post {} which they do not own (Owner: {})", userId , postId , post.getUserId());
+            throw new AccessDeniedException("User does not have permission to modify this post ");
+        }
+
         PostVariant variant = postVariantMapper.toEntity(createDto);
         variant.setPost(post);
 
@@ -50,10 +67,20 @@ public class PostVariantServiceImpl implements PostVariantService {
                     .getNextBestTime();
             variant.setScheduledAt(bestTime);
         }
+
         if(createDto.getMediaAssetIds() != null
                 && !createDto.getMediaAssetIds().isEmpty()) {
             List<MediaAsset> mediaAssets= mediaAssetRepository.findAllById(createDto
                     .getMediaAssetIds());
+            if(mediaAssets.size() != createDto.getMediaAssetIds().size()) {
+                throw new MediaAssetNotFoundException("One or more media assets not found.");
+            }
+
+            for(MediaAsset asset : mediaAssets) {
+                if(!asset.getPost().getUserId().equals(userId)) {
+                    throw new AccessDeniedException("User does not have permission to use social media asset: " + asset.getAssetId());
+                }
+            }
             variant.setMediaAssets(mediaAssets);
         }
 
@@ -66,56 +93,88 @@ public class PostVariantServiceImpl implements PostVariantService {
 
     @Override
     @Transactional(readOnly = true)
-    public PostVariantResponseDto getPostVariantById(UUID postId , UUID variantId) {
+    public PostVariantResponseDto getPostVariantById(UUID postId ,UUID userId,  UUID variantId) {
         Post post = postRepository.findById(postId).orElseThrow(
                 ()-> new ResourceNotFoundException("Cannot find post with id: " + postId)
         );
+
+        if(!post.getUserId().equals(userId)){
+            throw new AccessDeniedException("User does not have permission to view this post");
+        }
+
         PostVariant variant = postVariantRepository.findById(variantId).orElseThrow(
                 ()-> new ResourceNotFoundException("Cannot find variant with id: " + variantId)
         );
+
         if (!variant.getPost().getId().equals(post.getId())) {
-            throw new ResourceNotFoundException("Cannot find variant " + variantId + " does not belong to post " + postId);
+            throw new ResourceNotFoundException("Variant " + variantId + " does not belong to post " + postId);
         }
+
         return postVariantMapper.toDto(variant);
     }
 
     @Override
     @Transactional
-    public PostVariantResponseDto updateExistingVariant(UUID postId, UUID variantId , UpdatePostVariantRequestDto updateDto) {
-        postRepository.findById(postId).orElseThrow(
+    public PostVariantResponseDto updateExistingVariant(
+            UUID postId, UUID userId,
+            UUID variantId , UpdatePostVariantRequestDto updateDto) {
+
+        Post post = postRepository.findById(postId).orElseThrow(
                 ()-> new ResourceNotFoundException("Cannot find post with id: " + postId)
         );
+
+        if(!post.getUserId().equals(userId)){
+            log.warn("User {} attempted to update variant for post {} which they do not own (Owner: {})", userId , postId , post.getUserId());
+            throw new AccessDeniedException("User does not have permission to modify this post.");
+        }
+
         PostVariant existingVariant = postVariantRepository.findById(variantId).orElseThrow(
                 ()-> new ResourceNotFoundException("Cannot find postVariant with id: " + variantId)
         );
-        if(!existingVariant.getPost().getId().equals(postId)) {
+
+        if(!existingVariant.getPost().getId().equals(post.getId())) {
             throw new ResourceNotFoundException("Cannot update post variant " + variantId + " does not belong to post " + postId);
         }
-        postVariantMapper.updateFromDto(updateDto, existingVariant);
+
 
         if(updateDto.getMediaAssetIds() != null){
             List<MediaAsset> mediaAssets= mediaAssetRepository.findAllById( updateDto.getMediaAssetIds());
             existingVariant.setMediaAssets(mediaAssets);
         }
 
-
+        postVariantMapper.updateFromDto(updateDto, existingVariant);
         PostVariant updateVariant = postVariantRepository.save(existingVariant);
         return postVariantMapper.toDto(updateVariant);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<PostVariantResponseDto> getAllPostVariants(UUID postId) {
+    public List<PostVariantResponseDto> getAllPostVariants(UUID postId, UUID userId) {
         Post post = postRepository.findById(postId).orElseThrow(
                 ()-> new ResourceNotFoundException("Cannot find post with id: " + postId));
+
+        if(!post.getUserId().equals(userId)){
+            throw new AccessDeniedException("User does not have permission to view these variants");
+        }
+
         return post.getVariants().stream().map(postVariantMapper::toDto).collect(Collectors.toList());
 
     }
 
     @Override
-    public void deletePostVariantById(UUID variantId) {
-        if(!postVariantRepository.existsById(variantId)) {
-            throw new ResourceNotFoundException("Cannot find post with id: " + variantId);
+    @Transactional
+    public void deletePostVariantById(UUID postId , UUID userId , UUID variantId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(()-> new ResourceNotFoundException("Cannot find post with id: " + postId));
+
+        PostVariant variant = postVariantRepository.findById(variantId).orElseThrow(()->
+                new ResourceNotFoundException("Cannot find variant with id: " + variantId));
+
+        if(!post.getUserId().equals(userId)){
+            throw new AccessDeniedException("User does not have permission to delete this variant.");
+        }
+        if(!variant.getPost().getId().equals(postId)) {
+            throw new ResourceNotFoundException("Variant " + variantId + " does not belong to post " + postId);
         }
         postVariantRepository.deleteById(variantId);
     }

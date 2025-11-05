@@ -11,6 +11,9 @@ import java.util.UUID;
 @Data
 public class CreatePostVariantRequestDto {
 
+    @NotNull(message = "Social Account ID must be provided")
+    private UUID socialAccountId;
+
     @NotBlank(message = "Platform cannot be blank")
     private String platform;
 
@@ -19,7 +22,6 @@ public class CreatePostVariantRequestDto {
     private List<UUID> mediaAssetIds;
     private LocalDateTime scheduledAt;
 
-    @NotNull(message = "Social Account ID must be provided")
-    private UUID socialAccountId;
+
 
 }

@@ -13,4 +13,5 @@ public interface SocialAccountService {
     void deleteSocialAccount(UUID accountId);
     void markedAccountTokenExpired(UUID accountId);
     String getActiveAccessToken(UUID accountId);
+    void validateAccountOwnership(UUID accountId, UUID userId);
 }

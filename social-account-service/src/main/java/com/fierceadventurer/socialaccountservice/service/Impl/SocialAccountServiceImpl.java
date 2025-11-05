@@ -20,6 +20,7 @@ import com.fierceadventurer.socialaccountservice.service.SocialAccountService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -134,6 +135,19 @@ public class SocialAccountServiceImpl implements SocialAccountService {
             socialAccountRepository.save(account);
 
             throw new TokenRefreshException("Could not refresh token for account " + accountId + ". User must re-authenticate.");
+        }
+    }
+
+    @Override
+    public void validateAccountOwnership(UUID accountId, UUID userId) {
+        log.info("Validating ownership for account {} by user {}", accountId, userId);
+
+        SocialAccount account = socialAccountRepository.findById(accountId)
+                .orElseThrow(() -> new ResourceNotFoundException("Social Account not found with id: " + accountId));
+
+        if(!account.getUserId().equals(userId)){
+            log.warn("Access Denied: User {} does not own social account {}", userId, accountId);
+            throw new AccessDeniedException("User does not have permisiion for this social account.");
         }
     }
 

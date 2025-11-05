@@ -138,6 +138,7 @@ services:
       - KAFKA_URL=kafka:29092
       - CLIENTS_SOCIAL_ACCOUNT_SERVICE_URL=http://social-account-service:8080
       - CLIENTS_ANALYTICS_SERVICE_URL=http://analytics-service:8080
+      - KEYCLOAK_ISSUER_URI=http://keycloak:8080/realms/user-service
     networks:
       - social_media_net
 
@@ -161,6 +162,7 @@ services:
       - CLIENTS_SOCIAL_ACCOUNT_SERVICE_URL=http://social-account-service:8080
       - KAFKA_CLIENTID=scheduler-consumer-docker-1
       - SPRING_JMX_ENABLED=false
+      - KAFKA_URL=kafka:29092
     networks:
       - social_media_net
 
@@ -177,6 +179,7 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://social-account-db:5432/social_account_service_db
       - SPRING_DATASOURCE_USERNAME=admin3
       - SPRING_DATASOURCE_PASSWORD=password
+      - KEYCLOAK_ISSUER_URI=http://keycloak:8080/realms/user-service
     networks:
       - social_media_net
 
@@ -199,6 +202,29 @@ services:
       - SPRING_DATASOURCE_PASSWORD=password
       - KAFKA_URL=kafka:29092
       - CLIENTS_SOCIAL_ACCOUNT_SERVICE_URL=http://social-account-service:8080
+    networks:
+      - social_media_net
+
+  user-service:
+    build: ./user-service
+    container_name: user-service
+    depends_on:
+      user-db:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+      keycloak:
+        condition: service_started # Depends on keycloak
+    ports:
+      - "8085:8080" # Exposed on host port 8085
+    environment:
+      - SERVER_PORT=8080
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://user-db:5432/user_service_db
+      - SPRING_DATASOURCE_USERNAME=admin5
+      - SPRING_DATASOURCE_PASSWORD=password
+      - KAFKA_URL=kafka:29092
+      # This is the internal URL for the Keycloak server
+      - KEYCLOAK_ISSUER_URI=http://keycloak:8080/realms/user-service
     networks:
       - social_media_net
 
