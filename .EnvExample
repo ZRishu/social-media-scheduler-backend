@@ -16,7 +16,7 @@ KAFKA_URL=localhost:9092
 # Feign Client URLs (for local IDE-to-container communication)
 CLIENTS_SOCIAL_ACCOUNT_SERVICE_URL=http://localhost:8082
 CLIENTS_ANALYTICS_SERVICE_URL=http://localhost:8083
-
+CLIENTS_MEDIA_STORAGE_SERVICE_URL=http://localhost:8086
 
 # === post-service ===
 # (Set these in the Run Configuration for PostServiceApplication)
@@ -63,8 +63,7 @@ KAFKA_URL=localhost:9092
 KEYCLOAK_ISSUER_URI=http://localhost:8088/realms/user-service
 
 #media-storage-service
-SERVER_PORT=8084
+SERVER_PORT=8086
 MEDIA_STORAGE_DB_URL=jdbc:postgresql://localhost:5006/media_service_db
 MEDIA_STORAGE_DB_USERNAME=admin_media
 MEDIA_STORAGE_DB_PASSWORD=password
-CLIENTS_MEDIA_STORAGE_SERVICE_URL=http://localhost:8084

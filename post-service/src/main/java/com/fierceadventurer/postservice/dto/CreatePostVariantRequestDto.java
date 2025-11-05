@@ -19,7 +19,7 @@ public class CreatePostVariantRequestDto {
 
     private String content;
     private List<String> hashtags;
-    private List<UUID> mediaAssetIds;
+    private List<String> mediaUrls;
     private LocalDateTime scheduledAt;
 
 

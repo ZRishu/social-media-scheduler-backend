@@ -19,6 +19,9 @@ public class MediaAsset {
     @Column(name = "id", updatable = false, nullable = false)
     private UUID assetId;
 
+    @Column(nullable = false, updatable = false)
+    private UUID userId;
+
     @Column(name = "media_url", nullable = false, columnDefinition = "TEXT")
     private String storageUrl;
 

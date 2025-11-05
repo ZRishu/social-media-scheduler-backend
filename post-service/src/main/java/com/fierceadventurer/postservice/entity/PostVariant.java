@@ -1,5 +1,6 @@
 package com.fierceadventurer.postservice.entity;
 
+import com.fierceadventurer.postservice.enums.Platform;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -23,8 +24,9 @@ public class PostVariant {
     @JoinColumn(name = "post_id" , nullable = false)
     private  Post post;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String platform;
+    private Platform platform;
 
     @Column(columnDefinition = "TEXT")
     private String content;

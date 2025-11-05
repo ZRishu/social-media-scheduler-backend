@@ -8,6 +8,8 @@ import com.fierceadventurer.postservice.dto.UpdatePostVariantRequestDto;
 import com.fierceadventurer.postservice.entity.MediaAsset;
 import com.fierceadventurer.postservice.entity.Post;
 import com.fierceadventurer.postservice.entity.PostVariant;
+import com.fierceadventurer.postservice.enums.Platform;
+import com.fierceadventurer.postservice.enums.PostType;
 import com.fierceadventurer.postservice.events.VariantReadyForSchedulingEvent;
 import com.fierceadventurer.postservice.exception.MediaAssetNotFoundException;
 import com.fierceadventurer.postservice.exception.ResourceNotFoundException;
@@ -16,6 +18,7 @@ import com.fierceadventurer.postservice.repository.MediaAssetRepository;
 import com.fierceadventurer.postservice.repository.PostRepository;
 import com.fierceadventurer.postservice.repository.PostVariantRepository;
 import com.fierceadventurer.postservice.service.PostVariantService;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.access.AccessDeniedException;
@@ -51,33 +54,38 @@ public class PostVariantServiceImpl implements PostVariantService {
             throw new AccessDeniedException("User does not own social account: " + createDto.getSocialAccountId());
         }
 
-        Post post = postRepository.findById(postId).orElseThrow(
-               ()-> new ResourceNotFoundException("Cannot create a variant for non existing post with id: " + postId));
-
-        if(!post.getUserId().equals(userId)){
-            log.warn("User {} attempted to create variant post {} which they do not own (Owner: {})", userId , postId , post.getUserId());
-            throw new AccessDeniedException("User does not have permission to modify this post ");
-        }
+        Post post = findPostAndVerifyOwnership(postId , userId , "create variant for");
 
         PostVariant variant = postVariantMapper.toEntity(createDto);
         variant.setPost(post);
 
         if(variant.getScheduledAt() == null) {
+            log.info("No schedule time provided for variant. Fetching best time...");
             LocalDateTime bestTime = analyticsClient.getNextBestTime(createDto.getSocialAccountId())
                     .getNextBestTime();
             variant.setScheduledAt(bestTime);
         }
 
-        if(createDto.getMediaAssetIds() != null
-                && !createDto.getMediaAssetIds().isEmpty()) {
-            List<MediaAsset> mediaAssets= mediaAssetRepository.findAllById(createDto
-                    .getMediaAssetIds());
-            if(mediaAssets.size() != createDto.getMediaAssetIds().size()) {
-                throw new MediaAssetNotFoundException("One or more media assets not found.");
-            }
+        if(createDto.getMediaUrls() != null
+                && !createDto.getMediaUrls().isEmpty()) {
+            List<MediaAsset> mediaAssets= createDto.getMediaUrls().stream()
+                .map(url -> {
+                    MediaAsset asset = new MediaAsset();
+                    asset.setPost(post);
+                    asset.setUserId(userId);
+                    asset.setStorageUrl(url);
+
+
+                    asset.setMediaType(mapPlatformToPostType(variant.getPlatform()));
+                    asset.setSize(0L); // Placeholder.
+
+                    return mediaAssetRepository.save(asset);
+                }).collect(Collectors.toList());
+
 
             for(MediaAsset asset : mediaAssets) {
                 if(!asset.getPost().getUserId().equals(userId)) {
+                    log.warn("User {} attempted to use media asset{} which they do not own (Owner: {})", userId , asset.getAssetId() , asset.getUserId());
                     throw new AccessDeniedException("User does not have permission to use social media asset: " + asset.getAssetId());
                 }
             }
@@ -91,16 +99,17 @@ public class PostVariantServiceImpl implements PostVariantService {
         return postVariantMapper.toDto(savedVariant);
     }
 
+    private PostType mapPlatformToPostType(@NotNull(message = "Platform cannot be blank") Platform platform) {
+        if (platform == Platform.INSTAGRAM || platform == Platform.THREADS || platform == Platform.LINKEDIN) {
+            return PostType.IMAGE; // Or a more complex logic to check content type
+        }
+        return PostType.TEXT;
+    }
+
     @Override
     @Transactional(readOnly = true)
     public PostVariantResponseDto getPostVariantById(UUID postId ,UUID userId,  UUID variantId) {
-        Post post = postRepository.findById(postId).orElseThrow(
-                ()-> new ResourceNotFoundException("Cannot find post with id: " + postId)
-        );
-
-        if(!post.getUserId().equals(userId)){
-            throw new AccessDeniedException("User does not have permission to view this post");
-        }
+        Post post = findPostAndVerifyOwnership(postId , userId , "view");
 
         PostVariant variant = postVariantRepository.findById(variantId).orElseThrow(
                 ()-> new ResourceNotFoundException("Cannot find variant with id: " + variantId)
@@ -119,14 +128,9 @@ public class PostVariantServiceImpl implements PostVariantService {
             UUID postId, UUID userId,
             UUID variantId , UpdatePostVariantRequestDto updateDto) {
 
-        Post post = postRepository.findById(postId).orElseThrow(
-                ()-> new ResourceNotFoundException("Cannot find post with id: " + postId)
-        );
 
-        if(!post.getUserId().equals(userId)){
-            log.warn("User {} attempted to update variant for post {} which they do not own (Owner: {})", userId , postId , post.getUserId());
-            throw new AccessDeniedException("User does not have permission to modify this post.");
-        }
+        Post post = findPostAndVerifyOwnership(postId , userId , "update");
+
 
         PostVariant existingVariant = postVariantRepository.findById(variantId).orElseThrow(
                 ()-> new ResourceNotFoundException("Cannot find postVariant with id: " + variantId)
@@ -136,13 +140,14 @@ public class PostVariantServiceImpl implements PostVariantService {
             throw new ResourceNotFoundException("Cannot update post variant " + variantId + " does not belong to post " + postId);
         }
 
+        postVariantMapper.updateFromDto(updateDto, existingVariant);
 
         if(updateDto.getMediaAssetIds() != null){
             List<MediaAsset> mediaAssets= mediaAssetRepository.findAllById( updateDto.getMediaAssetIds());
             existingVariant.setMediaAssets(mediaAssets);
         }
 
-        postVariantMapper.updateFromDto(updateDto, existingVariant);
+
         PostVariant updateVariant = postVariantRepository.save(existingVariant);
         return postVariantMapper.toDto(updateVariant);
     }
@@ -150,33 +155,38 @@ public class PostVariantServiceImpl implements PostVariantService {
     @Override
     @Transactional(readOnly = true)
     public List<PostVariantResponseDto> getAllPostVariants(UUID postId, UUID userId) {
-        Post post = postRepository.findById(postId).orElseThrow(
-                ()-> new ResourceNotFoundException("Cannot find post with id: " + postId));
+        Post post = findPostAndVerifyOwnership(postId, userId, "view");
 
-        if(!post.getUserId().equals(userId)){
-            throw new AccessDeniedException("User does not have permission to view these variants");
-        }
-
-        return post.getVariants().stream().map(postVariantMapper::toDto).collect(Collectors.toList());
+        return post.getVariants().stream().
+                map(postVariantMapper::toDto)
+                .collect(Collectors.toList());
 
     }
 
     @Override
     @Transactional
     public void deletePostVariantById(UUID postId , UUID userId , UUID variantId) {
-        Post post = postRepository.findById(postId)
-                .orElseThrow(()-> new ResourceNotFoundException("Cannot find post with id: " + postId));
+        Post post = findPostAndVerifyOwnership(postId, userId, "delete");
 
         PostVariant variant = postVariantRepository.findById(variantId).orElseThrow(()->
                 new ResourceNotFoundException("Cannot find variant with id: " + variantId));
 
-        if(!post.getUserId().equals(userId)){
-            throw new AccessDeniedException("User does not have permission to delete this variant.");
-        }
         if(!variant.getPost().getId().equals(postId)) {
             throw new ResourceNotFoundException("Variant " + variantId + " does not belong to post " + postId);
         }
         postVariantRepository.deleteById(variantId);
+    }
+
+    private Post findPostAndVerifyOwnership(UUID postId, UUID userId, String action) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new ResourceNotFoundException("Post not found with id: " + postId));
+
+        if (!post.getUserId().equals(userId)) {
+            log.warn("User {} attempted to {} variant for post {} which they do not own (Owner: {})",
+                    userId, action, postId, post.getUserId());
+            throw new AccessDeniedException("User does not have permission to modify this post.");
+        }
+        return post;
     }
 
     private void publishSchedulingEvent(PostVariant variant, UUID socialAccountId) {
@@ -197,6 +207,9 @@ public class PostVariantServiceImpl implements PostVariantService {
                 .collect(Collectors.toList());
         event.setMediaUrls(urls);
         kafkaTemplate.send(topic, event);
+        log.info("Published {} event to topic '{}' for variant ID: {}",
+                isScheduled ? "SCHEDULED" : "IMMEDIATE", topic, variant.getVariantId());
+
 
 
     }

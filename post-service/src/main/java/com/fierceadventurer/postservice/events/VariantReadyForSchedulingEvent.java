@@ -1,5 +1,6 @@
 package com.fierceadventurer.postservice.events;
 
+import com.fierceadventurer.postservice.enums.Platform;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -11,7 +12,7 @@ public class VariantReadyForSchedulingEvent {
     private UUID postId;
     private UUID variantId;
     private UUID socialAccountId;
-    private String platform;
+    private Platform platform;
     private String title;
     private String content;
     private List<String> hashtags;
