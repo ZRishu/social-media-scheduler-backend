@@ -3,6 +3,7 @@
   <component name="Encoding">
     <file url="file://$PROJECT_DIR$/analytics-service/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/media-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/media-storage-service/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/post-service/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/scheduler-service/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/social-account-service/src/main/java" charset="UTF-8" />

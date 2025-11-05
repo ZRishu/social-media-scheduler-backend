@@ -228,6 +228,23 @@ services:
     networks:
       - social_media_net
 
+  media-db:
+    image: postgres:15
+    container_name: media-db
+    environment:
+      - POSTGRES_USER=admin_media
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=media_service_db
+    ports:
+      - "5006:5432"
+    volumes:
+      - media-data:/var/lib/postgresql/data
+    networks:
+      - social_media_net
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U admin_media -d media_service_db" ]
+
+
   keycloak:
     image: quay.io/keycloak/keycloak:latest
     container_name: keycloak
@@ -276,6 +293,7 @@ volumes:
   social-account-data:
   analytics-data:
   user-data:
+  media-data:
   keycloak_db_data:
 
 networks:
