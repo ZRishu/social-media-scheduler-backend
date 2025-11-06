@@ -53,3 +53,8 @@ management:
     web:
       exposure:
         include: health
+
+
+logging:
+  pattern:
+    level: "%5p [${spring.application.name:},%X{X-Correlation-Id:-}]"
