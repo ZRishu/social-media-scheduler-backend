@@ -47,12 +47,25 @@ services:
     environment:
       - SERVER_PORT=9000
 
-
+      - spring.cloud.gateway.routes[0].id=user-service
       - spring.cloud.gateway.routes[0].uri=http://user-service:8080
+      - spring.cloud.gateway.routes[0].predicates[0]=Path=/api/v1/users/**
+
+      - spring.cloud.gateway.routes[1].id=post-service
       - spring.cloud.gateway.routes[1].uri=http://post-service:8080
+      - spring.cloud.gateway.routes[1].predicates[0]=Path=/api/v1/posts/**
+
+      - spring.cloud.gateway.routes[2].id=social-account-service
       - spring.cloud.gateway.routes[2].uri=http://social-account-service:8080
+      - spring.cloud.gateway.routes[2].predicates[0]=Path=/api/v1/accounts/**, /api/v1/internal/**
+
+      - spring.cloud.gateway.routes[3].id=analytics-service
       - spring.cloud.gateway.routes[3].uri=http://analytics-service:8080
+      - spring.cloud.gateway.routes[3].predicates[0]=Path=/api/v1/analytics/**
+
+      - spring.cloud.gateway.routes[4].id=media-storage-service
       - spring.cloud.gateway.routes[4].uri=http://media-storage-service:8080
+      - spring.cloud.gateway.routes[4].predicates[0]=Path=/api/v1/media/**
 
       - KEYCLOAK_ISSUER_URI=http://keycloak:8080/realms/user-service
 
