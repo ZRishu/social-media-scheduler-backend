@@ -6,12 +6,13 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>3.2.5</version>
-        <relativePath/> </parent>
+        <relativePath/>
+    </parent>
     <groupId>com.fierceadventurer</groupId>
     <artifactId>api-gateway</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>api-gateway</name>
-    <description>api-gateway</description>
+    <description>API Gateway for the application</description>
 
     <properties>
         <java.version>21</java.version>
@@ -65,5 +66,4 @@
             </plugin>
         </plugins>
     </build>
-
 </project>

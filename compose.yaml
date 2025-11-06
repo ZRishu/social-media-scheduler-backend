@@ -27,6 +27,35 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_CREATE_TOPICS: "variant-scheduling-topic:1:1,variant-immediate-publish-topic:1:1,social-account-created-topic:1:1"
 
+
+  api-gateway:
+    build: ./api-gateway
+    container_name: api-gateway
+    ports:
+      # This is the ONLY port your frontend will use:
+      - "9000:9000"
+    networks:
+      - social_media_net
+    depends_on:
+      - post-service
+      - scheduler-service
+      - social-account-service
+      - analytics-service
+      - user-service
+      - media-service
+      - keycloak
+    environment:
+      - SERVER_PORT=9000
+
+
+      - spring.cloud.gateway.routes[0].uri=http://user-service:8080
+      - spring.cloud.gateway.routes[1].uri=http://post-service:8080
+      - spring.cloud.gateway.routes[2].uri=http://social-account-service:8080
+      - spring.cloud.gateway.routes[3].uri=http://analytics-service:8080
+      - spring.cloud.gateway.routes[4].uri=http://media-storage-service:8080
+
+      - KEYCLOAK_ISSUER_URI=http://keycloak:8080/realms/user-service
+
   # --- Databases ---
   post-db:
     image: postgres:15
@@ -255,7 +284,7 @@ services:
       media-db:
         condition: service_healthy
     ports:
-      - "8084:8080"
+      - "8086:8080"
     environment:
       - SERVER_PORT=8080
       - SPRING_DATASOURCE_URL=jdbc:postgresql://media-db:5432/media_service_db
