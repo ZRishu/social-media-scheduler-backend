@@ -49,7 +49,7 @@ SOCIAL_ACCOUNT_SERVICE_DB_PASSWORD=password
 # === analytics-service ===
 # (Set these in the Run Configuration for AnalyticsServiceApplication)
 SERVER_PORT=8083
-ANALYTICS_SERVICE_DB_URL=jdbc:postgresql://localhost:5003/analytics_service_db
+ANALYTICS_SERVICE_DB_URL=jdbc:postgresql://localhost:5003/analytics-service-db
 ANALYTICS_SERVICE_DB_USERNAME=admin4
 ANALYTICS_SERVICE_DB_PASSWORD=password
 # (Also needs KAFKA_URL, CLIENTS_SOCIAL_ACCOUNT_SERVICE_URL)
@@ -67,3 +67,4 @@ SERVER_PORT=8086
 MEDIA_STORAGE_DB_URL=jdbc:postgresql://localhost:5006/media_service_db
 MEDIA_STORAGE_DB_USERNAME=admin_media
 MEDIA_STORAGE_DB_PASSWORD=password
+
