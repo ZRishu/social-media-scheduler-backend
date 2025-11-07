@@ -27,8 +27,10 @@ public class SocialAccountController {
 
     @PostMapping
     public ResponseEntity<SocialAccountResponseDto> createSocialAccount(
-            @Valid @RequestBody CreateSocialAccountRequestDto requestDto){
-        SocialAccountResponseDto createAccount = socialAccountService.createSocialAccount(requestDto);
+            @Valid @RequestBody CreateSocialAccountRequestDto requestDto,
+            @AuthenticationPrincipal Jwt jwt) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        SocialAccountResponseDto createAccount = socialAccountService.createSocialAccount(userId ,requestDto);
         return new ResponseEntity<>(createAccount ,HttpStatus.CREATED);
     }
 

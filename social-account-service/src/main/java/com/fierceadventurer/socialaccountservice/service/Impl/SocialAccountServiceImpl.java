@@ -2,15 +2,14 @@ package com.fierceadventurer.socialaccountservice.service.Impl;
 
 import com.fierceadventurer.socialaccountservice.client.TokenRefreshClient;
 import com.fierceadventurer.socialaccountservice.client.TokenRefreshClientFactory;
+import com.fierceadventurer.socialaccountservice.client.impl.LinkedInConnectClient;
 import com.fierceadventurer.socialaccountservice.config.RateLimitProperties;
-import com.fierceadventurer.socialaccountservice.dto.AccountCreatedEvent;
-import com.fierceadventurer.socialaccountservice.dto.CreateSocialAccountRequestDto;
-import com.fierceadventurer.socialaccountservice.dto.OAuthRefreshResponse;
-import com.fierceadventurer.socialaccountservice.dto.SocialAccountResponseDto;
+import com.fierceadventurer.socialaccountservice.dto.*;
 import com.fierceadventurer.socialaccountservice.entities.AuthToken;
 import com.fierceadventurer.socialaccountservice.entities.RateLimitQuota;
 import com.fierceadventurer.socialaccountservice.entities.SocialAccount;
 import com.fierceadventurer.socialaccountservice.enums.AccountStatus;
+import com.fierceadventurer.socialaccountservice.enums.Provider;
 import com.fierceadventurer.socialaccountservice.exception.ResourceNotFoundException;
 import com.fierceadventurer.socialaccountservice.exception.TokenRefreshException;
 import com.fierceadventurer.socialaccountservice.mapper.SocialAccountMapper;
@@ -39,13 +38,42 @@ public class SocialAccountServiceImpl implements SocialAccountService {
     private final RateLimitProperties rateLimitProperties;
     private final KafkaTemplate<String, AccountCreatedEvent> kafkaTemplate;
     private final TokenRefreshClientFactory tokenRefreshFactory;
+    private final LinkedInConnectClient linkedInConnectClient;
 
     @Override
     @Transactional
-    public SocialAccountResponseDto createSocialAccount(CreateSocialAccountRequestDto requestDto) {
-        SocialAccount socialAccount = socialAccountMapper.toEntity(requestDto);
-        for(AuthToken token : socialAccount.getAuthTokens()){
-            token.setSocialAccount(socialAccount);
+    public SocialAccountResponseDto createSocialAccount(UUID userId , CreateSocialAccountRequestDto requestDto) {
+        log.info("Creating social account for user {}", userId);
+        SocialAccount socialAccount = new SocialAccount();
+        socialAccount.setUserId(userId);
+        socialAccount.setProvider(Provider.valueOf(requestDto.getProvider().toUpperCase()));
+        socialAccount.setStatus(AccountStatus.ACTIVE);
+        socialAccount.setAccountType(requestDto.getAccountType());
+
+        if(socialAccount.getProvider() == Provider.LINKEDIN && requestDto.getAuthCode() != null) {
+            log.info("Starting LinkedIn OAuth flow for user {}", userId);
+
+
+            LinkedInTokenResponse tokens = linkedInConnectClient.exhangeAuthCode(
+                    requestDto.getAuthCode(),
+                    requestDto.getRedirectUri()
+            );
+
+            AuthToken authToken = new AuthToken();
+            authToken.setSocialAccount(socialAccount);
+            authToken.setAccessToken(tokens.getAccessToken());
+            authToken.setRefreshToken(tokens.getRefreshToken());
+            authToken.setExpiry(LocalDateTime.now().plusSeconds(tokens.getExpiresIn()));
+
+            socialAccount.getAuthTokens().add(authToken);
+            socialAccount.setUsername(requestDto.getUsername() != null ? requestDto.getUsername() : "LinkedIn User");
+            socialAccount.setExternalId("linkedin-" + UUID.randomUUID());
+        }
+        else{
+            socialAccount.setUsername(requestDto.getUsername());
+            socialAccount.setDisplayName(requestDto.getDisplayName());
+            socialAccount.setProfileImageUrl(requestDto.getProfileImageUrl());
+            socialAccount.setExternalId(requestDto.getExternalId());
         }
 
         RateLimitQuota quota = new RateLimitQuota();
@@ -66,7 +94,7 @@ public class SocialAccountServiceImpl implements SocialAccountService {
                 savedAccount.getProvider().name()
         );
 
-        kafkaTemplate.send("social-account-created-event", event);
+        kafkaTemplate.send("social-account-created-topic", event);
         return socialAccountMapper.toDto(savedAccount);
     }
 

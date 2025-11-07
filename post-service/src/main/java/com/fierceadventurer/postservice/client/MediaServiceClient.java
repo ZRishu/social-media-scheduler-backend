@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.UUID;
 
-@FeignClient(name = "media-storage-service", url = "${clients.media-storage-service.url}")
+@FeignClient(name = "media-storage-service", url = "${clients.media-service.url}")
 public interface MediaServiceClient {
 
     @GetMapping("/api/v1/media/{id}")

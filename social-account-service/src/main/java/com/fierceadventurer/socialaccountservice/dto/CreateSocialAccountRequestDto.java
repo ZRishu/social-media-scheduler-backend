@@ -1,21 +1,18 @@
 package com.fierceadventurer.socialaccountservice.dto;
 
 import com.fierceadventurer.socialaccountservice.enums.AccountType;
-import com.fierceadventurer.socialaccountservice.enums.Provider;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
-import java.util.UUID;
-
 @Data
 public class CreateSocialAccountRequestDto {
 
-    @NotNull(message = "User ID must be provided")
-    private UUID userId;
-
     @NotNull(message = "provider cannot be null")
-    private Provider provider;
+    private String provider;
+
+    @NotNull(message = "Account Type must be specified")
+    private AccountType accountType;
 
     @NotBlank(message = "Username cannot be blank")
     private String username;
@@ -24,12 +21,16 @@ public class CreateSocialAccountRequestDto {
 
     private String profileImageUrl;
 
-    @NotNull
-    private CreateAuthTokenRequestDto authToken;
-
-    @NotNull(message = "Account Type must be specified")
-    private AccountType accountType;
-
     @NotBlank(message = "External ID cannot be blank")
     private String externalId;
+
+    @NotNull
+    private String authCode;
+
+    private String redirectUri;
+
+
+
+
+
 }

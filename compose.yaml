@@ -67,6 +67,10 @@ services:
       - spring.cloud.gateway.routes[4].uri=http://media-storage-service:8080
       - spring.cloud.gateway.routes[4].predicates[0]=Path=/api/v1/media/**
 
+      - spring.cloud.gateway.routes[5].id=ai-service
+      - spring.cloud.gateway.routes[5].uri=http://ai-service:8080
+      - spring.cloud.gateway.routes[5].predicates[0]=Path=/api/v1/ai/**
+
       - KEYCLOAK_ISSUER_URI=http://keycloak:8080/realms/user-service
 
   # --- Databases ---
@@ -197,8 +201,9 @@ services:
       - KAFKA_URL=kafka:29092
       - CLIENTS_SOCIAL_ACCOUNT_SERVICE_URL=http://social-account-service:8080
       - CLIENTS_ANALYTICS_SERVICE_URL=http://analytics-service:8080
-      - CLIENTS_MEDIA_STORAGE_SERVICE_URL=http://media-storage-service:8080
+      - CLIENTS_MEDIA_SERVICE_URL=http://media-service:8080
       - KEYCLOAK_ISSUER_URI=http://keycloak:8080/realms/user-service
+
     networks:
       - social_media_net
 
@@ -241,6 +246,8 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://social-account-db:5432/social_account_service_db
       - SPRING_DATASOURCE_USERNAME=admin3
       - SPRING_DATASOURCE_PASSWORD=password
+      - LINKEDIN_CLIENT_ID=${LINKEDIN_CLIENT_ID}
+      - LINKEDIN_CLIENT_SECRET=${LINKEDIN_CLIENT_SECRET}
       - KEYCLOAK_ISSUER_URI=http://keycloak:8080/realms/user-service
     networks:
       - social_media_net
@@ -312,7 +319,7 @@ services:
     container_name: ai-service
     depends_on:
       keycloak:
-        condition: service_healthy
+        condition: service_started
       media-service:
         condition: service_started
     ports:
@@ -345,6 +352,9 @@ services:
     depends_on:
       keycloak-db:
         condition: service_healthy
+
+
+    # --- END OF ADDITION ---
     restart: unless-stopped
 
 
