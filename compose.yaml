@@ -306,6 +306,26 @@ services:
     networks:
       - social_media_net
 
+
+  ai-service:
+    build: ./ai-service
+    container_name: ai-service
+    depends_on:
+      keycloak:
+        condition: service_healthy
+      media-service:
+        condition: service_started
+    ports:
+      - "8087:8080" # Exposed on host port 8086 for local debugging
+    environment:
+      - SERVER_PORT=8080
+      # Pass your local Groq API key to the container
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - KEYCLOAK_ISSUER_URI=http://keycloak:8080/realms/user-service
+      - CLIENTS_MEDIA_SERVICE_URL=http://media-service:8080
+    networks:
+      - social_media_net
+
   keycloak:
     image: quay.io/keycloak/keycloak:latest
     container_name: keycloak

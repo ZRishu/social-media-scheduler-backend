@@ -39,6 +39,12 @@ spring:
           predicates:
             - Path=/api/v1/media/**
 
+         # --- AI Service ---
+        - id: ai-service
+          uri: http://localhost:8086
+          predicates:
+            - Path=/api/v1/ai/**
+
 
   # --- Spring Security Configuration ---
   security:

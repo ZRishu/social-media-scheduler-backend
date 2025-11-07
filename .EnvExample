@@ -16,7 +16,7 @@ KAFKA_URL=localhost:9092
 # Feign Client URLs (for local IDE-to-container communication)
 CLIENTS_SOCIAL_ACCOUNT_SERVICE_URL=http://localhost:8082
 CLIENTS_ANALYTICS_SERVICE_URL=http://localhost:8083
-CLIENTS_MEDIA_STORAGE_SERVICE_URL=http://localhost:8086
+CLIENTS_MEDIA_SERVICE_URL=http://localhost:8086
 
 # === post-service ===
 # (Set these in the Run Configuration for PostServiceApplication)
