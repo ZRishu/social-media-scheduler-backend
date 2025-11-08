@@ -1,0 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.quote{
+    font-family: 'Times New Roman', Times, serif;
+}
