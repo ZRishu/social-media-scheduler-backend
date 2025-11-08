@@ -41,7 +41,7 @@ spring:
 
          # --- AI Service ---
         - id: ai-service
-          uri: http://localhost:8086
+          uri: http://localhost:8087
           predicates:
             - Path=/api/v1/ai/**
 
@@ -51,7 +51,9 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${KEYCLOAK_ISSUER_URI}
+          issuer-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI}
+          # This new line is required to fix the 401 error
+          jwk-set-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI}
 
 # --- Actuator (for health checks) ---
 management:

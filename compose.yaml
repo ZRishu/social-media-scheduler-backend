@@ -9,13 +9,15 @@ services:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
 
+
   kafka:
     image: confluentinc/cp-kafka:7.3.2
     container_name: kafka
     networks:
       - social_media_net
     depends_on:
-      - zookeeper
+      zookeeper:
+        condition: service_started # FIX: Waits for Zookeeper to be ready
     ports:
       - "9092:9092"
     environment:
@@ -27,315 +29,81 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_CREATE_TOPICS: "variant-scheduling-topic:1:1,variant-immediate-publish-topic:1:1,social-account-created-topic:1:1,keycloak.user.created:1:1"
 
-
-  api-gateway:
-    build: ./api-gateway
-    container_name: api-gateway
-    ports:
-      # This is the ONLY port your frontend will use:
-      - "9000:9000"
-    networks:
-      - social_media_net
-    depends_on:
-      - post-service
-      - scheduler-service
-      - social-account-service
-      - analytics-service
-      - user-service
-      - media-service
-      - keycloak
-    environment:
-      - SERVER_PORT=9000
-
-      - spring.cloud.gateway.routes[0].id=user-service
-      - spring.cloud.gateway.routes[0].uri=http://user-service:8080
-      - spring.cloud.gateway.routes[0].predicates[0]=Path=/api/v1/users/**
-
-      - spring.cloud.gateway.routes[1].id=post-service
-      - spring.cloud.gateway.routes[1].uri=http://post-service:8080
-      - spring.cloud.gateway.routes[1].predicates[0]=Path=/api/v1/posts/**
-
-      - spring.cloud.gateway.routes[2].id=social-account-service
-      - spring.cloud.gateway.routes[2].uri=http://social-account-service:8080
-      - spring.cloud.gateway.routes[2].predicates[0]=Path=/api/v1/accounts/**, /api/v1/internal/**
-
-      - spring.cloud.gateway.routes[3].id=analytics-service
-      - spring.cloud.gateway.routes[3].uri=http://analytics-service:8080
-      - spring.cloud.gateway.routes[3].predicates[0]=Path=/api/v1/analytics/**
-
-      - spring.cloud.gateway.routes[4].id=media-storage-service
-      - spring.cloud.gateway.routes[4].uri=http://media-storage-service:8080
-      - spring.cloud.gateway.routes[4].predicates[0]=Path=/api/v1/media/**
-
-      - spring.cloud.gateway.routes[5].id=ai-service
-      - spring.cloud.gateway.routes[5].uri=http://ai-service:8080
-      - spring.cloud.gateway.routes[5].predicates[0]=Path=/api/v1/ai/**
-
-      - KEYCLOAK_ISSUER_URI=http://keycloak:8080/realms/user-service
-
   # --- Databases ---
   post-db:
     image: postgres:15
     container_name: post-db
-    environment:
-      - POSTGRES_USER=admin1
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=post_service_db
-    ports:
-      - "5000:5432"
-    volumes:
-      - post-data:/var/lib/postgresql/data
-    networks:
-      - social_media_net
+    environment: { POSTGRES_USER: "admin1", POSTGRES_PASSWORD: "password", POSTGRES_DB: "post_service_db" }
+    ports: [ "5000:5432" ]
+    volumes: [ "post-data:/var/lib/postgresql/data" ]
+    networks: [ social_media_net ]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U admin1 -d post_service_db"]
 
   scheduler-db:
     image: postgres:15
     container_name: scheduler-db
-    environment:
-      - POSTGRES_USER=admin2
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=scheduler_service_db
-    ports:
-      - "5001:5432"
-    volumes:
-      - scheduler-data:/var/lib/postgresql/data
-    networks:
-      - social_media_net
+    environment: { POSTGRES_USER: "admin2", POSTGRES_PASSWORD: "password", POSTGRES_DB: "scheduler_service_db" }
+    ports: [ "5001:5432" ]
+    volumes: [ "scheduler-data:/var/lib/postgresql/data" ]
+    networks: [ social_media_net ]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U admin2 -d scheduler_service_db"]
 
   social-account-db:
     image: postgres:15
     container_name: social-account-db
-    environment:
-      - POSTGRES_USER=admin3
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=social_account_service_db
-    ports:
-      - "5002:5432"
-    volumes:
-      - social-account-data:/var/lib/postgresql/data
-    networks:
-      - social_media_net
+    environment: { POSTGRES_USER: "admin3", POSTGRES_PASSWORD: "password", POSTGRES_DB: "social_account_service_db" }
+    ports: [ "5002:5432" ]
+    volumes: [ "social-account-data:/var/lib/postgresql/data" ]
+    networks: [ social_media_net ]
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U admin3 -d social_account_service_db" ]
 
   analytics-db:
     image: postgres:15
     container_name: analytics-db
-    environment:
-      - POSTGRES_USER=admin4
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=analytics-service-db
-    ports:
-      - "5003:5432"
-    volumes:
-      - analytics-data:/var/lib/postgresql/data
-    networks:
-      - social_media_net
+    environment: { POSTGRES_USER: "admin4", POSTGRES_PASSWORD: "password", POSTGRES_DB: "analytics-service-db" }
+    ports: [ "5003:5432" ]
+    volumes: [ "analytics-data:/var/lib/postgresql/data" ]
+    networks: [ social_media_net ]
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U admin4 -d analytics-service-db" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   user-db:
     image: postgres:15
     container_name: user-db
-    environment:
-      - POSTGRES_USER=admin5
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=user_service_db
-    ports:
-      - "5004:5432" # New port for local access
-    volumes:
-      - user-data:/var/lib/postgresql/data
-    networks:
-      - social_media_net
+    environment: { POSTGRES_USER: "admin5", POSTGRES_PASSWORD: "password", POSTGRES_DB: "user_service_db" }
+    ports: [ "5004:5432" ]
+    volumes: [ "user-data:/var/lib/postgresql/data" ]
+    networks: [ social_media_net ]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U admin5 -d user_service_db"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   media-db:
     image: postgres:15
     container_name: media-db
-    environment:
-      - POSTGRES_USER=admin_media
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=media_service_db
-    ports:
-      - "5006:5432"
-    volumes:
-      - media-data:/var/lib/postgresql/data
-    networks:
-      - social_media_net
+    environment: { POSTGRES_USER: "admin_media", POSTGRES_PASSWORD: "password", POSTGRES_DB: "media_service_db" }
+    ports: [ "5006:5432" ]
+    volumes: [ "media-data:/var/lib/postgresql/data" ]
+    networks: [ social_media_net ]
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U admin_media -d media_service_db" ]
 
+  keycloak-db:
+    image: postgres:15
+    container_name: keycloak-db
+    environment: { POSTGRES_DB: "keycloak", POSTGRES_USER: "keycloak", POSTGRES_PASSWORD: "password" }
+    ports: [ "5005:5432" ]
+    volumes: [ "keycloak_db_data:/var/lib/postgresql/data" ]
+    networks: [ social_media_net ]
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U keycloak -d keycloak" ]
+    restart: unless-stopped
 
-
-
-  # --- Application Services ---
-  post-service:
-    build: ./post-service
-    container_name: post-service
-    depends_on:
-      post-db:
-        condition: service_healthy
-      kafka:
-        condition: service_started
-      social-account-service: { condition: service_started }
-      analytics-service: { condition: service_started }
-
-    ports:
-      - "8080:8080"
-    environment:
-      - SERVER_PORT=8080
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://post-db:5432/post_service_db
-      - SPRING_DATASOURCE_USERNAME=admin1
-      - SPRING_DATASOURCE_PASSWORD=password
-      - KAFKA_URL=kafka:29092
-      - CLIENTS_SOCIAL_ACCOUNT_SERVICE_URL=http://social-account-service:8080
-      - CLIENTS_ANALYTICS_SERVICE_URL=http://analytics-service:8080
-      - CLIENTS_MEDIA_SERVICE_URL=http://media-service:8080
-      - KEYCLOAK_ISSUER_URI=http://keycloak:8080/realms/user-service
-
-    networks:
-      - social_media_net
-
-  scheduler-service:
-    build: ./scheduler-service
-    container_name: scheduler-service
-    depends_on:
-      scheduler-db:
-        condition: service_healthy
-      kafka:
-        condition: service_started
-      social-account-service: { condition: service_started }
-    ports:
-      - "8081:8080"
-    environment:
-      - SERVER_PORT=8080
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://scheduler-db:5432/scheduler_service_db
-      - SPRING_DATASOURCE_USERNAME=admin2
-      - SPRING_DATASOURCE_PASSWORD=password
-      - KAFKA_URL=kafka:29092
-      - CLIENTS_SOCIAL_ACCOUNT_SERVICE_URL=http://social-account-service:8080
-      - KAFKA_CLIENTID=scheduler-consumer-docker-1
-      - SPRING_JMX_ENABLED=false
-      - KAFKA_URL=kafka:29092
-      - SPRING_JMX_ENABLED=false
-
-    networks:
-      - social_media_net
-
-  social-account-service:
-    build: ./social-account-service
-    container_name: social-account-service
-    depends_on:
-      social-account-db:
-        condition: service_healthy
-    ports:
-      - "8082:8080"
-    environment:
-      - SERVER_PORT=8080
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://social-account-db:5432/social_account_service_db
-      - SPRING_DATASOURCE_USERNAME=admin3
-      - SPRING_DATASOURCE_PASSWORD=password
-      - LINKEDIN_CLIENT_ID=${LINKEDIN_CLIENT_ID}
-      - LINKEDIN_CLIENT_SECRET=${LINKEDIN_CLIENT_SECRET}
-      - KEYCLOAK_ISSUER_URI=http://keycloak:8080/realms/user-service
-    networks:
-      - social_media_net
-
-  analytics-service:
-    build: ./analytics-service
-    container_name: analytics-service
-    depends_on:
-      analytics-db:
-        condition: service_healthy
-      kafka:
-        condition: service_started
-      social-account-service:
-        condition: service_started
-    ports:
-      - "8083:8080"
-    environment:
-      - SERVER_PORT=8080
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://analytics-db:5432/analytics-service-db
-      - SPRING_DATASOURCE_USERNAME=admin4
-      - SPRING_DATASOURCE_PASSWORD=password
-      - KAFKA_URL=kafka:29092
-      - CLIENTS_SOCIAL_ACCOUNT_SERVICE_URL=http://social-account-service:8080
-    networks:
-      - social_media_net
-
-  user-service:
-    build: ./user-service
-    container_name: user-service
-    depends_on:
-      user-db:
-        condition: service_healthy
-      kafka:
-        condition: service_started
-      keycloak:
-        condition: service_started # Depends on keycloak
-    ports:
-      - "8085:8080" # Exposed on host port 8085
-    environment:
-      - SERVER_PORT=8080
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://user-db:5432/user_service_db
-      - SPRING_DATASOURCE_USERNAME=admin5
-      - SPRING_DATASOURCE_PASSWORD=password
-      - KAFKA_URL=kafka:29092
-      # This is the internal URL for the Keycloak server
-      - KEYCLOAK_ISSUER_URI=http://keycloak:8080/realms/user-service
-    networks:
-      - social_media_net
-
-  media-service:
-    build: ./media-storage-service
-    container_name: media-service
-    depends_on:
-      media-db:
-        condition: service_healthy
-    ports:
-      - "8086:8080"
-    environment:
-      - SERVER_PORT=8080
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://media-db:5432/media_service_db
-      - SPRING_DATASOURCE_USERNAME=admin_media
-      - SPRING_DATASOURCE_PASSWORD=password
-    networks:
-      - social_media_net
-
-
-  ai-service:
-    build: ./ai-service
-    container_name: ai-service
-    depends_on:
-      keycloak:
-        condition: service_started
-      media-service:
-        condition: service_started
-    ports:
-      - "8087:8080" # Exposed on host port 8086 for local debugging
-    environment:
-      - SERVER_PORT=8080
-      # Pass your local Groq API key to the container
-      - GROQ_API_KEY=${GROQ_API_KEY}
-      - KEYCLOAK_ISSUER_URI=http://keycloak:8080/realms/user-service
-      - CLIENTS_MEDIA_SERVICE_URL=http://media-service:8080
-    networks:
-      - social_media_net
-
+  # --- Authentication Service (NO BUILD) ---
   keycloak:
     image: quay.io/keycloak/keycloak:latest
-    build: ./keycloak
     container_name: keycloak
     command: start-dev
     environment:
@@ -346,38 +114,182 @@ services:
       - KC_DB_USERNAME=keycloak
       - KC_DB_PASSWORD=password
       - KC_DB_SCHEMA=public
+      # --- FIX: Tells Keycloak its public address is localhost:8088 ---
+      - KC_HOSTNAME_URL=http://localhost:8088
+      - KC_HOSTNAME_ADMIN_URL=http://localhost:8088
     ports:
       - "8088:8080"
     networks:
       - social_media_net
     depends_on:
       keycloak-db:
-        condition: service_healthy
-
-
-    # --- END OF ADDITION ---
+        condition: service_healthy # FIX: Wait for DB to be healthy
     restart: unless-stopped
 
-
-  keycloak-db:
-    image: postgres:15
-    container_name: keycloak-db
+  # --- Application Gateway ---
+  api-gateway:
+    build: ./api-gateway
+    container_name: api-gateway
+    ports: [ "9000:9000" ]
+    networks: [ social_media_net ]
+    depends_on:
+      keycloak:
+        condition: service_healthy # FIX: Wait for Keycloak to be healthy
     environment:
-      - POSTGRES_DB=keycloak
-      - POSTGRES_USER=keycloak
-      - POSTGRES_PASSWORD=password
-    ports:
-      - "5005:5432"
-    volumes:
-      - keycloak_db_data:/var/lib/postgresql/data
-    networks: # Added network
-      - social_media_net
-    healthcheck: # Added healthcheck
-      test: [ "CMD-SHELL", "pg_isready -U keycloak -d keycloak" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
+      - SERVER_PORT=9000
+      - spring.cloud.gateway.routes[0].id=user-service
+      - spring.cloud.gateway.routes[0].uri=http://user-service:8080
+      - spring.cloud.gateway.routes[0].predicates[0]=Path=/api/v1/users/**
+      - spring.cloud.gateway.routes[1].id=post-service
+      - spring.cloud.gateway.routes[1].uri=http://post-service:8080
+      - spring.cloud.gateway.routes[1].predicates[0]=Path=/api/v1/posts/**
+      - spring.cloud.gateway.routes[2].id=social-account-service
+      - spring.cloud.gateway.routes[2].uri=http://social-account-service:8080
+      - spring.cloud.gateway.routes[2].predicates[0]=Path=/api/v1/accounts/**, /api/v1/internal/**
+      - spring.cloud.gateway.routes[3].id=analytics-service
+      - spring.cloud.gateway.routes[3].uri=http://analytics-service:8080
+      - spring.cloud.gateway.routes[3].predicates[0]=Path=/api/v1/analytics/**
+      # --- FIX: Standardized media service name ---
+      - spring.cloud.gateway.routes[4].id=media-service
+      - spring.cloud.gateway.routes[4].uri=http://media-service:8080
+      - spring.cloud.gateway.routes[4].predicates[0]=Path=/api/v1/media/**
+      - spring.cloud.gateway.routes[5].id=ai-service
+      - spring.cloud.gateway.routes[5].uri=http://ai-service:8080
+      - spring.cloud.gateway.routes[5].predicates[0]=Path=/api/v1/ai/**
+
+      # --- FIX for 401 UNAUTHORIZED ERROR ---
+      # This tells Spring to TRUST tokens from your browser (localhost:8088)
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://localhost:8088/realms/user-service
+      # This tells Spring where to check the token's signature (internal address)
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/user-service/protocol/openid-connect/certs
+
+  # --- Application Services ---
+  post-service:
+    build: ./post-service
+    container_name: post-service
+    depends_on:
+      post-db: { condition: service_healthy }
+      kafka: { condition: service_started }
+    # FIX: Removed ports - all traffic must go through the gateway
+    environment:
+      - SERVER_PORT=8080
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://post-db:5432/post_service_db
+      - SPRING_DATASOURCE_USERNAME=admin1
+      - SPRING_DATASOURCE_PASSWORD=password
+      - KAFKA_URL=kafka:29092
+      - CLIENTS_SOCIAL_ACCOUNT_SERVICE_URL=http://social-account-service:8080
+      - CLIENTS_ANALYTICS_SERVICE_URL=http://analytics-service:8080
+      - CLIENTS_MEDIA_SERVICE_URL=http://media-service:8080 # FIX: Standardized name
+      # --- FIX for 401 ERROR ---
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://localhost:8088/realms/user-service
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/user-service/protocol/openid-connect/certs
+    networks: [ social_media_net ]
+
+  scheduler-service:
+    build: ./scheduler-service
+    container_name: scheduler-service
+    depends_on:
+      scheduler-db: { condition: service_healthy }
+      kafka: { condition: service_started }
+    # FIX: Removed ports
+    environment:
+      - SERVER_PORT=8080
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://scheduler-db:5432/scheduler_service_db
+      - SPRING_DATASOURCE_USERNAME=admin2
+      - SPRING_DATASOURCE_PASSWORD=password
+      - KAFKA_URL=kafka:29092
+      - CLIENTS_SOCIAL_ACCOUNT_SERVICE_URL=http://social-account-service:8080
+      - KAFKA_CLIENTID=scheduler-consumer-docker-1
+      - SPRING_JMX_ENABLED=false
+      # --- FIX: Removed duplicate keys ---
+    networks: [ social_media_net ]
+
+  social-account-service:
+    build: ./social-account-service
+    container_name: social-account-service
+    depends_on:
+      social-account-db: { condition: service_healthy }
+      kafka: { condition: service_started }
+    # FIX: Removed ports
+    environment:
+      - SERVER_PORT=8080
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://social-account-db:5432/social_account_service_db
+      - SPRING_DATASOURCE_USERNAME=admin3
+      - SPRING_DATASOURCE_PASSWORD=password
+      - KAFKA_URL=kafka:29092
+      - LINKEDIN_CLIENT_ID=${LINKEDIN_CLIENT_ID}
+      - LINKEDIN_CLIENT_SECRET=${LINKEDIN_CLIENT_SECRET}
+      # --- FIX for 401 ERROR ---
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://localhost:8088/realms/user-service
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/user-service/protocol/openid-connect/certs
+    networks: [ social_media_net ]
+
+  analytics-service:
+    build: ./analytics-service
+    container_name: analytics-service
+    depends_on:
+      analytics-db: { condition: service_healthy }
+      kafka: { condition: service_started }
+    # FIX: Removed ports
+    environment:
+      - SERVER_PORT=8080
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://analytics-db:5432/analytics_service_db
+      - SPRING_DATASOURCE_USERNAME=admin4
+      - SPRING_DATASOURCE_PASSWORD=password
+      - KAFKA_URL=kafka:29092
+      - CLIENTS_SOCIAL_ACCOUNT_SERVICE_URL=http://social-account-service:8080
+    networks: [ social_media_net ]
+
+  user-service:
+    build: ./user-service
+    container_name: user-service
+    depends_on:
+      user-db: { condition: service_healthy }
+      kafka: { condition: service_started }
+      keycloak: { condition: service_started } # FIX: Wait for Keycloak health
+    # FIX: Removed ports
+    environment:
+      - SERVER_PORT=8080
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://user-db:5432/user_service_db
+      - SPRING_DATASOURCE_USERNAME=admin5
+      - SPRING_DATASOURCE_PASSWORD=password
+      - KAFKA_URL=kafka:29092
+      # --- FIX for 401 ERROR ---
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://localhost:8088/realms/user-service
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/user-service/protocol/openid-connect/certs
+    networks: [ social_media_net ]
+
+  media-service:
+    build: ./media-storage-service
+    container_name: media-service # <-- Standardized name
+    depends_on:
+      media-db: { condition: service_healthy }
+    # FIX: Removed ports
+    environment:
+      - SERVER_PORT=8080
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://media-db:5432/media_service_db
+      - SPRING_DATASOURCE_USERNAME=admin_media
+      - SPRING_DATASOURCE_PASSWORD=password
+      # --- FIX for 401 ERROR ---
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://localhost:8088/realms/user-service
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/user-service/protocol/openid-connect/certs
+    networks: [ social_media_net ]
+
+  ai-service:
+    build: ./ai-service
+    container_name: ai-service
+    depends_on:
+      keycloak: { condition: service_started } # FIX: Wait for Keycloak health
+      media-service: { condition: service_started }
+    # FIX: Removed ports
+    environment:
+      - SERVER_PORT=8080
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - CLIENTS_MEDIA_SERVICE_URL=http://media-service:8080
+      # --- FIX for 401 ERROR ---
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://localhost:8088/realms/user-service
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/user-service/protocol/openid-connect/certs
+    networks: [ social_media_net ]
 
 volumes:
   post-data:
