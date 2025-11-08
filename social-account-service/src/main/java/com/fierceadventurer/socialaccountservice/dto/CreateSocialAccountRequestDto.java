@@ -14,16 +14,6 @@ public class CreateSocialAccountRequestDto {
     @NotNull(message = "Account Type must be specified")
     private AccountType accountType;
 
-    @NotBlank(message = "Username cannot be blank")
-    private String username;
-
-    private String displayName;
-
-    private String profileImageUrl;
-
-    @NotBlank(message = "External ID cannot be blank")
-    private String externalId;
-
     @NotNull
     private String authCode;
 

@@ -1,9 +1,11 @@
 package com.fierceadventurer.socialaccountservice.client.impl;
 
 import com.fierceadventurer.socialaccountservice.dto.LinkedInTokenResponse;
+import com.fierceadventurer.socialaccountservice.dto.LinkedInUserInfo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
@@ -22,7 +24,7 @@ public class LinkedInConnectClient {
 
     private final RestClient restClient = RestClient.create();
 
-    public LinkedInTokenResponse exhangeAuthCode(String authCode , String redirectUri) {
+    public LinkedInTokenResponse exchangeAuthCode(String authCode , String redirectUri) {
         log.info("Exchanging LinkedIn auth code for tokens");
         MultiValueMap<String, String> fromData = new LinkedMultiValueMap<>();
         fromData.add("grant_type", "authorization_code");
@@ -50,6 +52,20 @@ public class LinkedInConnectClient {
         catch (Exception e) {
             log.error("Failed to connect LinkedIn account: {}", e.getMessage());
             throw new RuntimeException("Failed to connect LinkedIn account. Please try again.");
+        }
+    }
+
+    public LinkedInUserInfo fetchUserProfile(String accessToken) {
+        log.info("Fetching LinkedIn user profile");
+        try {
+            return restClient.get()
+                    .uri("https://api.linkedin.com/v2/userinfo")
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                    .retrieve()
+                    .body(LinkedInUserInfo.class);
+        } catch (Exception e) {
+            log.error("Failed to fetch LinkedIn profile: {}", e.getMessage());
+            throw new RuntimeException("Failed to fetch LinkedIn profile data.");
         }
     }
 

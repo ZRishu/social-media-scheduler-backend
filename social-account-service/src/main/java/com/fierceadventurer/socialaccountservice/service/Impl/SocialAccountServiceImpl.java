@@ -53,11 +53,17 @@ public class SocialAccountServiceImpl implements SocialAccountService {
         if(socialAccount.getProvider() == Provider.LINKEDIN && requestDto.getAuthCode() != null) {
             log.info("Starting LinkedIn OAuth flow for user {}", userId);
 
-
-            LinkedInTokenResponse tokens = linkedInConnectClient.exhangeAuthCode(
+            LinkedInTokenResponse tokens = linkedInConnectClient.exchangeAuthCode(
                     requestDto.getAuthCode(),
                     requestDto.getRedirectUri()
             );
+
+            LinkedInUserInfo userInfo = linkedInConnectClient.fetchUserProfile(tokens.getAccessToken());
+
+            socialAccount.setExternalId(userInfo.getExternalId());
+            socialAccount.setUsername(userInfo.getEmail());
+            socialAccount.setDisplayName(userInfo.getFullName());
+            socialAccount.setProfileImageUrl(userInfo.getPictureUrl());
 
             AuthToken authToken = new AuthToken();
             authToken.setSocialAccount(socialAccount);
@@ -66,15 +72,12 @@ public class SocialAccountServiceImpl implements SocialAccountService {
             authToken.setExpiry(LocalDateTime.now().plusSeconds(tokens.getExpiresIn()));
 
             socialAccount.getAuthTokens().add(authToken);
-            socialAccount.setUsername(requestDto.getUsername() != null ? requestDto.getUsername() : "LinkedIn User");
-            socialAccount.setExternalId("linkedin-" + UUID.randomUUID());
+
         }
         else{
-            socialAccount.setUsername(requestDto.getUsername());
-            socialAccount.setDisplayName(requestDto.getDisplayName());
-            socialAccount.setProfileImageUrl(requestDto.getProfileImageUrl());
-            socialAccount.setExternalId(requestDto.getExternalId());
+            throw new UnsupportedOperationException("Provider not yet supported: " + socialAccount.getProvider());
         }
+
 
         RateLimitQuota quota = new RateLimitQuota();
         quota.setSocialAccount(socialAccount);

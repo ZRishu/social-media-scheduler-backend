@@ -1,6 +1,6 @@
 package com.fierceadventurer.userservice.config;
+import com.fierceadventurer.userservice.events.KeycloakUserCreatedEvent;
 import org.apache.kafka.common.serialization.StringDeserializer;
-import com.fierceadventurer.userservice.events.KeyclockUserCreatedEvent;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -23,12 +23,12 @@ public class KafkaConsumerConfig {
     private String groupId;
 
     @Bean
-    public ConsumerFactory<String, KeyclockUserCreatedEvent> consumerFactory() {
+    public ConsumerFactory<String, KeycloakUserCreatedEvent> consumerFactory() {
         Map<String, Object> props = new HashMap<>();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
 
-        JsonDeserializer<KeyclockUserCreatedEvent> deserializer = new JsonDeserializer<>(KeyclockUserCreatedEvent.class);
+        JsonDeserializer<KeycloakUserCreatedEvent> deserializer = new JsonDeserializer<>(KeycloakUserCreatedEvent.class);
         deserializer.setRemoveTypeHeaders(false);
         deserializer.addTrustedPackages("*");
         deserializer.setUseTypeMapperForKey(false);
@@ -40,8 +40,8 @@ public class KafkaConsumerConfig {
 
 
     @Bean
-    public ConcurrentKafkaListenerContainerFactory<String , KeyclockUserCreatedEvent> kafkaListenerContainerFactory(){
-        ConcurrentKafkaListenerContainerFactory<String , KeyclockUserCreatedEvent> factory = new ConcurrentKafkaListenerContainerFactory<>();
+    public ConcurrentKafkaListenerContainerFactory<String , KeycloakUserCreatedEvent> kafkaListenerContainerFactory(){
+        ConcurrentKafkaListenerContainerFactory<String , KeycloakUserCreatedEvent> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory());
         return factory;
     }

@@ -5,7 +5,7 @@ import lombok.Data;
 import java.util.UUID;
 
 @Data
-public class KeyclockUserCreatedEvent {
+public class KeycloakUserCreatedEvent {
     private UUID userId;
     private String email;
     private String firstName;
