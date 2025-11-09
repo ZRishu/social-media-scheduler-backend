@@ -8,7 +8,7 @@ services:
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
-
+    # healthcheck: REMOVED as requested
 
   kafka:
     image: confluentinc/cp-kafka:7.3.2
@@ -17,7 +17,7 @@ services:
       - social_media_net
     depends_on:
       zookeeper:
-        condition: service_started # FIX: Waits for Zookeeper to be ready
+        condition: service_started # FIX: Changed from service_healthy
     ports:
       - "9092:9092"
     environment:
@@ -114,7 +114,6 @@ services:
       - KC_DB_USERNAME=keycloak
       - KC_DB_PASSWORD=password
       - KC_DB_SCHEMA=public
-      # --- FIX: Tells Keycloak its public address is localhost:8088 ---
       - KC_HOSTNAME_URL=http://localhost:8088
       - KC_HOSTNAME_ADMIN_URL=http://localhost:8088
     ports:
@@ -123,7 +122,8 @@ services:
       - social_media_net
     depends_on:
       keycloak-db:
-        condition: service_healthy # FIX: Wait for DB to be healthy
+        condition: service_healthy
+    # healthcheck: REMOVED as requested
     restart: unless-stopped
 
   # --- Application Gateway ---
@@ -134,7 +134,7 @@ services:
     networks: [ social_media_net ]
     depends_on:
       keycloak:
-        condition: service_healthy # FIX: Wait for Keycloak to be healthy
+        condition: service_started # FIX: Changed from service_healthy
     environment:
       - SERVER_PORT=9000
       - spring.cloud.gateway.routes[0].id=user-service
@@ -149,7 +149,6 @@ services:
       - spring.cloud.gateway.routes[3].id=analytics-service
       - spring.cloud.gateway.routes[3].uri=http://analytics-service:8080
       - spring.cloud.gateway.routes[3].predicates[0]=Path=/api/v1/analytics/**
-      # --- FIX: Standardized media service name ---
       - spring.cloud.gateway.routes[4].id=media-service
       - spring.cloud.gateway.routes[4].uri=http://media-service:8080
       - spring.cloud.gateway.routes[4].predicates[0]=Path=/api/v1/media/**
@@ -158,9 +157,7 @@ services:
       - spring.cloud.gateway.routes[5].predicates[0]=Path=/api/v1/ai/**
 
       # --- FIX for 401 UNAUTHORIZED ERROR ---
-      # This tells Spring to TRUST tokens from your browser (localhost:8088)
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://localhost:8088/realms/user-service
-      # This tells Spring where to check the token's signature (internal address)
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/user-service/protocol/openid-connect/certs
 
   # --- Application Services ---
@@ -169,8 +166,7 @@ services:
     container_name: post-service
     depends_on:
       post-db: { condition: service_healthy }
-      kafka: { condition: service_started }
-    # FIX: Removed ports - all traffic must go through the gateway
+      kafka: { condition: service_started } # FIX: Changed from service_healthy
     environment:
       - SERVER_PORT=8080
       - SPRING_DATASOURCE_URL=jdbc:postgresql://post-db:5432/post_service_db
@@ -179,8 +175,7 @@ services:
       - KAFKA_URL=kafka:29092
       - CLIENTS_SOCIAL_ACCOUNT_SERVICE_URL=http://social-account-service:8080
       - CLIENTS_ANALYTICS_SERVICE_URL=http://analytics-service:8080
-      - CLIENTS_MEDIA_SERVICE_URL=http://media-service:8080 # FIX: Standardized name
-      # --- FIX for 401 ERROR ---
+      - CLIENTS_MEDIA_SERVICE_URL=http://media-service:8080
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://localhost:8088/realms/user-service
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/user-service/protocol/openid-connect/certs
     networks: [ social_media_net ]
@@ -190,8 +185,7 @@ services:
     container_name: scheduler-service
     depends_on:
       scheduler-db: { condition: service_healthy }
-      kafka: { condition: service_started }
-    # FIX: Removed ports
+      kafka: { condition: service_started } # FIX: Changed from service_healthy
     environment:
       - SERVER_PORT=8080
       - SPRING_DATASOURCE_URL=jdbc:postgresql://scheduler-db:5432/scheduler_service_db
@@ -201,7 +195,6 @@ services:
       - CLIENTS_SOCIAL_ACCOUNT_SERVICE_URL=http://social-account-service:8080
       - KAFKA_CLIENTID=scheduler-consumer-docker-1
       - SPRING_JMX_ENABLED=false
-      # --- FIX: Removed duplicate keys ---
     networks: [ social_media_net ]
 
   social-account-service:
@@ -209,8 +202,7 @@ services:
     container_name: social-account-service
     depends_on:
       social-account-db: { condition: service_healthy }
-      kafka: { condition: service_started }
-    # FIX: Removed ports
+      kafka: { condition: service_started } # FIX: Changed from service_healthy
     environment:
       - SERVER_PORT=8080
       - SPRING_DATASOURCE_URL=jdbc:postgresql://social-account-db:5432/social_account_service_db
@@ -219,7 +211,6 @@ services:
       - KAFKA_URL=kafka:29092
       - LINKEDIN_CLIENT_ID=${LINKEDIN_CLIENT_ID}
       - LINKEDIN_CLIENT_SECRET=${LINKEDIN_CLIENT_SECRET}
-      # --- FIX for 401 ERROR ---
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://localhost:8088/realms/user-service
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/user-service/protocol/openid-connect/certs
     networks: [ social_media_net ]
@@ -229,11 +220,10 @@ services:
     container_name: analytics-service
     depends_on:
       analytics-db: { condition: service_healthy }
-      kafka: { condition: service_started }
-    # FIX: Removed ports
+      kafka: { condition: service_started } # FIX: Changed from service_healthy
     environment:
       - SERVER_PORT=8080
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://analytics-db:5432/analytics_service_db
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://analytics-db:5432/analytics-service-db
       - SPRING_DATASOURCE_USERNAME=admin4
       - SPRING_DATASOURCE_PASSWORD=password
       - KAFKA_URL=kafka:29092
@@ -245,32 +235,28 @@ services:
     container_name: user-service
     depends_on:
       user-db: { condition: service_healthy }
-      kafka: { condition: service_started }
-      keycloak: { condition: service_started } # FIX: Wait for Keycloak health
-    # FIX: Removed ports
+      kafka: { condition: service_started } # FIX: Changed from service_healthy
+      keycloak: { condition: service_started } # FIX: Changed from service_healthy
     environment:
       - SERVER_PORT=8080
       - SPRING_DATASOURCE_URL=jdbc:postgresql://user-db:5432/user_service_db
       - SPRING_DATASOURCE_USERNAME=admin5
       - SPRING_DATASOURCE_PASSWORD=password
       - KAFKA_URL=kafka:29092
-      # --- FIX for 401 ERROR ---
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://localhost:8088/realms/user-service
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/user-service/protocol/openid-connect/certs
     networks: [ social_media_net ]
 
   media-service:
     build: ./media-storage-service
-    container_name: media-service # <-- Standardized name
+    container_name: media-service
     depends_on:
       media-db: { condition: service_healthy }
-    # FIX: Removed ports
     environment:
       - SERVER_PORT=8080
       - SPRING_DATASOURCE_URL=jdbc:postgresql://media-db:5432/media_service_db
       - SPRING_DATASOURCE_USERNAME=admin_media
       - SPRING_DATASOURCE_PASSWORD=password
-      # --- FIX for 401 ERROR ---
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://localhost:8088/realms/user-service
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/user-service/protocol/openid-connect/certs
     networks: [ social_media_net ]
@@ -279,14 +265,12 @@ services:
     build: ./ai-service
     container_name: ai-service
     depends_on:
-      keycloak: { condition: service_started } # FIX: Wait for Keycloak health
+      keycloak: { condition: service_started } # FIX: Changed from service_healthy
       media-service: { condition: service_started }
-    # FIX: Removed ports
     environment:
       - SERVER_PORT=8080
       - GROQ_API_KEY=${GROQ_API_KEY}
       - CLIENTS_MEDIA_SERVICE_URL=http://media-service:8080
-      # --- FIX for 401 ERROR ---
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://localhost:8088/realms/user-service
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/user-service/protocol/openid-connect/certs
     networks: [ social_media_net ]
