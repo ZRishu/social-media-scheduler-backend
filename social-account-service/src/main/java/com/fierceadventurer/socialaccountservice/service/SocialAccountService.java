@@ -7,10 +7,11 @@ import com.fierceadventurer.socialaccountservice.entities.SocialAccount;
 import java.util.UUID;
 
 public interface SocialAccountService {
-    SocialAccountResponseDto createSocialAccount(CreateSocialAccountRequestDto requestDto);
+    SocialAccountResponseDto createSocialAccount(UUID userId ,CreateSocialAccountRequestDto requestDto);
     void suspendAccount(UUID accountId, String reason);
     void unsuspendAccount(UUID accountId);
     void deleteSocialAccount(UUID accountId);
     void markedAccountTokenExpired(UUID accountId);
     String getActiveAccessToken(UUID accountId);
+    void validateAccountOwnership(UUID accountId, UUID userId);
 }

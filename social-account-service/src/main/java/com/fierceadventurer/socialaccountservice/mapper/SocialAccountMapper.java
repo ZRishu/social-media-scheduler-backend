@@ -7,7 +7,7 @@ import com.fierceadventurer.socialaccountservice.entities.SocialAccount;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 
 @Mapper(componentModel = "spring")
@@ -18,8 +18,8 @@ public interface SocialAccountMapper {
     @Mapping(target = "createdAt" , ignore = true)
     @Mapping(target = "updatedAt" , ignore = true)
     @Mapping(target = "rateLimitQuota" , ignore = true)
-    @Mapping(source = "authToken" , target = "authTokens")
     SocialAccount toEntity(CreateSocialAccountRequestDto requestDto);
+
 
     @Mapping(target = "tokenId" , ignore = true)
     @Mapping(target = "socialAccount" , ignore = true)
@@ -27,11 +27,12 @@ public interface SocialAccountMapper {
 
     default List<AuthToken> mapAuthTokenDtoToList(CreateAuthTokenRequestDto createDto){
         if(createDto == null){
-            return Collections.emptyList();
+            return new ArrayList<>();
         }
-        return Collections.singletonList(toEntity(createDto));
+        List<AuthToken> list = new ArrayList<>();
+        list.add(toEntity(createDto));
+        return list;
     }
-
 
     SocialAccountResponseDto toDto(SocialAccount socialAccount) ;
 

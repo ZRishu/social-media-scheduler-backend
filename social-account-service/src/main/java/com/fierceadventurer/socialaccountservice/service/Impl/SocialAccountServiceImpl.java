@@ -2,15 +2,14 @@ package com.fierceadventurer.socialaccountservice.service.Impl;
 
 import com.fierceadventurer.socialaccountservice.client.TokenRefreshClient;
 import com.fierceadventurer.socialaccountservice.client.TokenRefreshClientFactory;
+import com.fierceadventurer.socialaccountservice.client.impl.LinkedInConnectClient;
 import com.fierceadventurer.socialaccountservice.config.RateLimitProperties;
-import com.fierceadventurer.socialaccountservice.dto.AccountCreatedEvent;
-import com.fierceadventurer.socialaccountservice.dto.CreateSocialAccountRequestDto;
-import com.fierceadventurer.socialaccountservice.dto.OAuthRefreshResponse;
-import com.fierceadventurer.socialaccountservice.dto.SocialAccountResponseDto;
+import com.fierceadventurer.socialaccountservice.dto.*;
 import com.fierceadventurer.socialaccountservice.entities.AuthToken;
 import com.fierceadventurer.socialaccountservice.entities.RateLimitQuota;
 import com.fierceadventurer.socialaccountservice.entities.SocialAccount;
 import com.fierceadventurer.socialaccountservice.enums.AccountStatus;
+import com.fierceadventurer.socialaccountservice.enums.Provider;
 import com.fierceadventurer.socialaccountservice.exception.ResourceNotFoundException;
 import com.fierceadventurer.socialaccountservice.exception.TokenRefreshException;
 import com.fierceadventurer.socialaccountservice.mapper.SocialAccountMapper;
@@ -20,6 +19,7 @@ import com.fierceadventurer.socialaccountservice.service.SocialAccountService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,14 +38,46 @@ public class SocialAccountServiceImpl implements SocialAccountService {
     private final RateLimitProperties rateLimitProperties;
     private final KafkaTemplate<String, AccountCreatedEvent> kafkaTemplate;
     private final TokenRefreshClientFactory tokenRefreshFactory;
+    private final LinkedInConnectClient linkedInConnectClient;
 
     @Override
     @Transactional
-    public SocialAccountResponseDto createSocialAccount(CreateSocialAccountRequestDto requestDto) {
-        SocialAccount socialAccount = socialAccountMapper.toEntity(requestDto);
-        for(AuthToken token : socialAccount.getAuthTokens()){
-            token.setSocialAccount(socialAccount);
+    public SocialAccountResponseDto createSocialAccount(UUID userId , CreateSocialAccountRequestDto requestDto) {
+        log.info("Creating social account for user {}", userId);
+        SocialAccount socialAccount = new SocialAccount();
+        socialAccount.setUserId(userId);
+        socialAccount.setProvider(Provider.valueOf(requestDto.getProvider().toUpperCase()));
+        socialAccount.setStatus(AccountStatus.ACTIVE);
+        socialAccount.setAccountType(requestDto.getAccountType());
+
+        if(socialAccount.getProvider() == Provider.LINKEDIN && requestDto.getAuthCode() != null) {
+            log.info("Starting LinkedIn OAuth flow for user {}", userId);
+
+            LinkedInTokenResponse tokens = linkedInConnectClient.exchangeAuthCode(
+                    requestDto.getAuthCode(),
+                    requestDto.getRedirectUri()
+            );
+
+            LinkedInUserInfo userInfo = linkedInConnectClient.fetchUserProfile(tokens.getAccessToken());
+
+            socialAccount.setExternalId(userInfo.getExternalId());
+            socialAccount.setUsername(userInfo.getEmail());
+            socialAccount.setDisplayName(userInfo.getFullName());
+            socialAccount.setProfileImageUrl(userInfo.getPictureUrl());
+
+            AuthToken authToken = new AuthToken();
+            authToken.setSocialAccount(socialAccount);
+            authToken.setAccessToken(tokens.getAccessToken());
+            authToken.setRefreshToken(tokens.getRefreshToken());
+            authToken.setExpiry(LocalDateTime.now().plusSeconds(tokens.getExpiresIn()));
+
+            socialAccount.getAuthTokens().add(authToken);
+
         }
+        else{
+            throw new UnsupportedOperationException("Provider not yet supported: " + socialAccount.getProvider());
+        }
+
 
         RateLimitQuota quota = new RateLimitQuota();
         quota.setSocialAccount(socialAccount);
@@ -65,7 +97,7 @@ public class SocialAccountServiceImpl implements SocialAccountService {
                 savedAccount.getProvider().name()
         );
 
-        kafkaTemplate.send("social-account-created-event", event);
+        kafkaTemplate.send("social-account-created-topic", event);
         return socialAccountMapper.toDto(savedAccount);
     }
 
@@ -134,6 +166,19 @@ public class SocialAccountServiceImpl implements SocialAccountService {
             socialAccountRepository.save(account);
 
             throw new TokenRefreshException("Could not refresh token for account " + accountId + ". User must re-authenticate.");
+        }
+    }
+
+    @Override
+    public void validateAccountOwnership(UUID accountId, UUID userId) {
+        log.info("Validating ownership for account {} by user {}", accountId, userId);
+
+        SocialAccount account = socialAccountRepository.findById(accountId)
+                .orElseThrow(() -> new ResourceNotFoundException("Social Account not found with id: " + accountId));
+
+        if(!account.getUserId().equals(userId)){
+            log.warn("Access Denied: User {} does not own social account {}", userId, accountId);
+            throw new AccessDeniedException("User does not have permisiion for this social account.");
         }
     }
 

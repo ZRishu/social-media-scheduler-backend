@@ -1,0 +1,68 @@
+server:
+  port: 9000
+
+spring:
+  application:
+    name: api-gateway
+
+  cloud:
+    gateway:
+      routes:
+        # --- User Service ---
+        - id: user-service
+          # When running in Docker, this will be overridden by: http://user-service:8080
+          uri: http://localhost:8085
+          predicates:
+            - Path=/api/v1/users/**
+
+        # --- Post Service ---
+        - id: post-service
+          uri: http://localhost:8080
+          predicates:
+            - Path=/api/v1/posts/**
+
+        # --- Social Account Service ---
+        - id: social-account-service
+          uri: http://localhost:8082
+          predicates:
+            - Path=/api/v1/accounts/**, /api/v1/internal/**
+
+        # --- Analytics Service ---
+        - id: analytics-service
+          uri: http://localhost:8083
+          predicates:
+            - Path=/api/v1/analytics/**
+
+        # --- Media Service ---
+        - id: media-storage-service
+          uri: http://localhost:8086
+          predicates:
+            - Path=/api/v1/media/**
+
+         # --- AI Service ---
+        - id: ai-service
+          uri: http://localhost:8087
+          predicates:
+            - Path=/api/v1/ai/**
+
+
+  # --- Spring Security Configuration ---
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI}
+          # This new line is required to fix the 401 error
+          jwk-set-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI}
+
+# --- Actuator (for health checks) ---
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+
+logging:
+  pattern:
+    level: "%5p [${spring.application.name:},%X{X-Correlation-Id:-}]"
