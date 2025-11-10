@@ -74,6 +74,7 @@ public class SocialAccountController {
     ){
         UUID userId = UUID.fromString(jwt.getSubject());
         socialAccountService.validateAccountOwnership(accountId , userId);
-        return ResponseEntity.ok().build();
+        SocialAccountResponseDto account = accountQueryService.getAccountById(accountId);
+        return ResponseEntity.ok(account);
     }
 }

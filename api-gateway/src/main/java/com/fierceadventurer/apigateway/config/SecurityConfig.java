@@ -32,7 +32,7 @@ public class SecurityConfig {
     public CorsWebFilter corsWebFilter() {
         CorsConfiguration config = new CorsConfiguration();
         // Updated origins to include common local test servers
-        config.setAllowedOrigins(List.of("http://localhost:3000", "http://127.0.0.1:5500"));
+        config.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:63342"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"));
         config.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With"));
         config.setAllowCredentials(true);
