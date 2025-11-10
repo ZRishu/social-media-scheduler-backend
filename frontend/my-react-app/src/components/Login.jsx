@@ -28,8 +28,8 @@ const Login = () => {
         <div className='grid grid-cols-2 gap-x-8'>
           <button className="flex items-center justify-center w-[200px] h-[65px] py-3 px-3 border border-gray-300 rounded-lg bg-white cursor-pointer text-sm mb-6 hover:bg-gray-50 transition-colors duration-300">
           Sign in with 
-            <p className='font-bold pl-1 text-lg text-black'>Linked</p>
-            <img src={LinkedIn} alt="linkedin logo" className="h-4 mr-3" />
+            <p className='font-bold pl-1'></p>
+            <img src={LinkedIn} alt="linkedin logo" className="h-7 mr-3" />
           </button>
           <button className="flex items-center justify-center w-[200px] h-[65px] py-3 px-3 border border-gray-300 rounded-lg bg-white cursor-pointer text-sm mb-6 hover:bg-gray-50 transition-colors duration-300">
           Sign in with 
