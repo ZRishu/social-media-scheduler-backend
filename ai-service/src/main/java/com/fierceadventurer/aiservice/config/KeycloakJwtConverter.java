@@ -1,4 +1,4 @@
-package com.fierceadventurer.socialaccountservice.config;
+package com.fierceadventurer.aiservice.config;
 
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
@@ -10,8 +10,8 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtGra
 import java.util.Collection;
 import java.util.stream.Stream;
 
-
 public class KeycloakJwtConverter implements Converter<Jwt, AbstractAuthenticationToken> {
+
     private final JwtGrantedAuthoritiesConverter defaultGrantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
     private final KeycloakRoleConverter keycloakRoleConverter = new KeycloakRoleConverter();
 
@@ -22,12 +22,15 @@ public class KeycloakJwtConverter implements Converter<Jwt, AbstractAuthenticati
         Collection<GrantedAuthority> keycloakRoles = keycloakRoleConverter.convert(jwt);
 
         Collection<GrantedAuthority> allAuthorities = Stream.concat(
-                defaultAuthorities.stream(), keycloakRoles.stream()).toList();
+                defaultAuthorities.stream(),
+                keycloakRoles.stream()
+        ).toList();
 
         String principalName = jwt.getClaimAsString("preferred_username");
-        if(principalName == null) {
+        if (principalName == null) {
             principalName = jwt.getSubject();
         }
-        return new JwtAuthenticationToken(jwt , allAuthorities , principalName);
+
+        return new JwtAuthenticationToken(jwt, allAuthorities, principalName);
     }
 }
