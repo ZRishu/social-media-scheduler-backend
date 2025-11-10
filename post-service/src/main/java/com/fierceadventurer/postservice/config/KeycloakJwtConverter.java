@@ -24,9 +24,9 @@ public class KeycloakJwtConverter implements Converter<Jwt, AbstractAuthenticati
         Collection<GrantedAuthority> allAuthorities = Stream.concat(
                 defaultAuthorities.stream(), keycloakRoles.stream()).toList();
 
-        String principalName = jwt.getClaimAsString("email");
+        String principalName = jwt.getClaimAsString("preferred_username");
         if(principalName == null) {
-            principalName = jwt.getClaimAsString("preferred_username");
+            principalName = jwt.getSubject();
         }
         return new JwtAuthenticationToken(jwt , allAuthorities , principalName);
     }

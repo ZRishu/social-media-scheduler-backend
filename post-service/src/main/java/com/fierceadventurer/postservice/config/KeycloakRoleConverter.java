@@ -20,9 +20,10 @@ public class KeycloakRoleConverter implements Converter<Jwt, Collection<GrantedA
             return List.of();
         }
 
+        @SuppressWarnings("unchecked")
         Collection<String> roles = (Collection<String>) realmAccess.get("roles");
 
-        if(roles == null) {
+        if(roles == null ||  roles.isEmpty()) {
             return List.of();
         }
 
