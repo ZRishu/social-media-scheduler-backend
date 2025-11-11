@@ -1,8 +1,7 @@
-package com.fierceadventurer.aiservice.configuration;
+package com.fierceadventurer.aiservice.config;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration

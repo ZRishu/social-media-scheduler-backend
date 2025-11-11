@@ -128,7 +128,9 @@ services:
 
   # --- Application Gateway ---
   api-gateway:
-    build: ./api-gateway
+    build:
+      context: ./api-gateway
+      network: host
     container_name: api-gateway
     ports: [ "9000:9000" ]
     networks: [ social_media_net ]
@@ -155,14 +157,15 @@ services:
       - spring.cloud.gateway.routes[5].id=ai-service
       - spring.cloud.gateway.routes[5].uri=http://ai-service:8080
       - spring.cloud.gateway.routes[5].predicates[0]=Path=/api/v1/ai/**
-
-      # --- FIX for 401 UNAUTHORIZED ERROR ---
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://localhost:8088/realms/user-service
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/user-service/protocol/openid-connect/certs
 
+
   # --- Application Services ---
   post-service:
-    build: ./post-service
+    build:
+      context: ./post-service
+      network: host
     container_name: post-service
     depends_on:
       post-db: { condition: service_healthy }
@@ -181,7 +184,9 @@ services:
     networks: [ social_media_net ]
 
   scheduler-service:
-    build: ./scheduler-service
+    build:
+      context: ./scheduler-service
+      network: host
     container_name: scheduler-service
     depends_on:
       scheduler-db: { condition: service_healthy }
@@ -198,7 +203,9 @@ services:
     networks: [ social_media_net ]
 
   social-account-service:
-    build: ./social-account-service
+    build:
+      context: ./social-account-service
+      network: host
     container_name: social-account-service
     depends_on:
       social-account-db: { condition: service_healthy }
@@ -216,14 +223,16 @@ services:
     networks: [ social_media_net ]
 
   analytics-service:
-    build: ./analytics-service
+    build:
+      context: ./analytics-service
+      network: host
     container_name: analytics-service
     depends_on:
       analytics-db: { condition: service_healthy }
       kafka: { condition: service_started } # FIX: Changed from service_healthy
     environment:
       - SERVER_PORT=8080
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://analytics-db:5432/analytics-service-db
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://analytics-db:5432/analytics_service_db
       - SPRING_DATASOURCE_USERNAME=admin4
       - SPRING_DATASOURCE_PASSWORD=password
       - KAFKA_URL=kafka:29092
@@ -231,7 +240,9 @@ services:
     networks: [ social_media_net ]
 
   user-service:
-    build: ./user-service
+    build:
+      context: ./user-service
+      network: host
     container_name: user-service
     depends_on:
       user-db: { condition: service_healthy }
@@ -248,7 +259,9 @@ services:
     networks: [ social_media_net ]
 
   media-service:
-    build: ./media-storage-service
+    build:
+      context: ./media-storage-service
+      network: host
     container_name: media-service
     depends_on:
       media-db: { condition: service_healthy }
@@ -262,7 +275,9 @@ services:
     networks: [ social_media_net ]
 
   ai-service:
-    build: ./ai-service
+    build:
+      context: ./ai-service
+      network: host
     container_name: ai-service
     depends_on:
       keycloak: { condition: service_started } # FIX: Changed from service_healthy
