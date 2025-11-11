@@ -8,7 +8,7 @@ services:
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
-    # healthcheck: REMOVED as requested
+
 
   kafka:
     image: confluentinc/cp-kafka:7.3.2
@@ -17,7 +17,7 @@ services:
       - social_media_net
     depends_on:
       zookeeper:
-        condition: service_started # FIX: Changed from service_healthy
+        condition: service_started
     ports:
       - "9092:9092"
     environment:
@@ -190,7 +190,7 @@ services:
     container_name: scheduler-service
     depends_on:
       scheduler-db: { condition: service_healthy }
-      kafka: { condition: service_started } # FIX: Changed from service_healthy
+      kafka: { condition: service_started }
     environment:
       - SERVER_PORT=8080
       - SPRING_DATASOURCE_URL=jdbc:postgresql://scheduler-db:5432/scheduler_service_db
@@ -229,7 +229,7 @@ services:
     container_name: analytics-service
     depends_on:
       analytics-db: { condition: service_healthy }
-      kafka: { condition: service_started } # FIX: Changed from service_healthy
+      kafka: { condition: service_started }
     environment:
       - SERVER_PORT=8080
       - SPRING_DATASOURCE_URL=jdbc:postgresql://analytics-db:5432/analytics_service_db
@@ -246,8 +246,8 @@ services:
     container_name: user-service
     depends_on:
       user-db: { condition: service_healthy }
-      kafka: { condition: service_started } # FIX: Changed from service_healthy
-      keycloak: { condition: service_started } # FIX: Changed from service_healthy
+      kafka: { condition: service_started }
+      keycloak: { condition: service_started }
     environment:
       - SERVER_PORT=8080
       - SPRING_DATASOURCE_URL=jdbc:postgresql://user-db:5432/user_service_db
@@ -280,7 +280,7 @@ services:
       network: host
     container_name: ai-service
     depends_on:
-      keycloak: { condition: service_started } # FIX: Changed from service_healthy
+      keycloak: { condition: service_started }
       media-service: { condition: service_started }
     environment:
       - SERVER_PORT=8080

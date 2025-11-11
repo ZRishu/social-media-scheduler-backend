@@ -1,31 +1,29 @@
-# --- Stage 1: Build the application ---
-# This stage uses a full Maven and JDK image to build your application's JAR file.
-FROM maven:3.9.6-eclipse-temurin-21 AS build
+# STAGE 1: Build the application
+# Use an official Maven image with JDK 21 (as specified in your pom.xml)
+FROM maven:3.9.6-eclipse-temurin-21 AS builder
 
-# Set the working directory inside the container
 WORKDIR /app
 
-# Copy the pom.xml file first to leverage Docker's layer caching
+# 1. Copy POM and download dependencies first
+# This step is cached by Docker, so it only re-runs if pom.xml changes.
 COPY pom.xml .
+RUN mvn dependency:go-offline
 
-# Copy the rest of your source code
+# 2. Copy the rest of the source code
 COPY src ./src
 
-# Run the Maven package command to build the JAR file
+# 3. Build the application and skip tests
 RUN mvn clean package -DskipTests
 
-# --- Stage 2: Create the final, lightweight image ---
-# This stage starts from a minimal Java Runtime (JRE) image
+# STAGE 2: Create the final, lightweight production image
+# Use a slim JRE for a smaller footprint and better security
 FROM eclipse-temurin:21-jre-jammy
 
-# Set the working directory
 WORKDIR /app
 
-# Copy only the compiled JAR file from the 'build' stage into the final image
-COPY --from=build /app/target/api-gateway-0.0.1-SNAPSHOT.jar app.jar
+# 4. Copy the built .jar file from the 'builder' stage
+# This wildcard finds the compiled -SNAPSHOT.jar file
+COPY --from=builder /app/target/*-SNAPSHOT.jar app.jar
 
-# Expose the port that the application will run on inside the container
-EXPOSE 9000
-
-# This is the command that will be run when the container starts
+# 5. Set the entrypoint to run the application
 ENTRYPOINT ["java", "-jar", "app.jar"]
