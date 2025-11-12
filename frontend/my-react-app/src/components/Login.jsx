@@ -4,6 +4,8 @@ import Eyeopen from '../assets/eyeopen.png';
 import Insta from '../assets/instagram.png';
 import faceBook from '../assets/facebook.png';
 import X from '../assets/X.png';
+import { NavLink,Link } from 'react-router-dom';
+
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -20,7 +22,7 @@ const Login = () => {
   return (
     <div className="min-h-screen flex font-sans text-gray-800 ">
       <div className="flex-1 flex flex-col justify-center items-center bg-white opactity-5 text-center">
-        {/* <div className="text-5xl font-bold text-purple-700 mb-5 self-center pr-20 ml-20">
+        {/* <div className="text-5xl font-bold text-[#184E77] mb-5 self-center pr-20 ml-20">
           Post schedular
         </div> */}
         <h2 className="text-4xl font-bold mb-8 mr-36 ml-36">Login</h2>
@@ -64,7 +66,7 @@ const Login = () => {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Email ID"
               required
-              className="w-full p-3 border border-gray-300 rounded-lg text-lg focus:outline-none focus:ring-2 focus:ring-purple-300"
+              className="w-full p-3 border border-gray-300 rounded-lg text-lg focus:outline-none transition-all focus:ring-2 focus:ring-[#168AAD]"
             />
           </div>
 
@@ -79,7 +81,7 @@ const Login = () => {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Password"
               required
-              className="w-full p-3 border border-gray-300 rounded-lg text-lg focus:outline-none focus:ring-2 focus:ring-purple-300"
+              className="w-full p-3 border border-gray-300 rounded-lg text-lg focus:outline-none transition-all focus:ring-2 focus:ring-[#168AAD]"
             />
             <span
               className="absolute right-4 top-1/2 mt-3 transform -translate-y-1/2 cursor-pointer text-gray-500"
@@ -99,28 +101,28 @@ const Login = () => {
               />
               Keep me logged in
             </label>
-            <a href="#" className="text-purple-700 font-semibold hover:underline">
+            <a href="#" className="text-[#184E77] font-semibold hover:underline">
               Forgot password?
             </a>
           </div>
 
-          <button
+          <Link to="/postCreation"
             type="submit"
-            className="w-full py-4 border-none rounded-lg bg-gradient-to-r from-purple-700 to-purple-500 text-white text-xl font-bold cursor-pointer mb-8 hover:opacity-90 transition-opacity duration-300"
+            className="w-full py-4 border-none inline-block rounded-lg bg-gradient-to-r from-[#184E77] to-[#168AAD] text-white text-xl font-bold cursor-pointer mb-8 hover:opacity-90 transition-opacity duration-300"
           >
             Login
-          </button>
+          </Link>
         </form>
 
         <div className="text-sm text-gray-600">
           Don't have an account?{' '}
-          <a href="#" className="text-purple-700 font-bold hover:underline">
+          <a href="#" className="text-[#184E77] font-bold hover:underline">
             Sign up
           </a>
         </div>
       </div>
 
-      <div className="flex-1 bg-gradient-to-br from-purple-100 to-purple-200 flex justify-center items-center relative overflow-hidden">
+      <div className="flex-1 bg-gradient-to-br from-[#D9ED92] to-[#34A0A4] flex justify-center items-center relative overflow-hidden">
         <h1 className="quote text-6xl text-gray-800 text-center leading-tight font-bold z-10 max-w-lg">
           "Changing the way the world writes"
         </h1>
@@ -129,7 +131,7 @@ const Login = () => {
         {/* Shape 1: Orange-ish circle */}
         <div className="absolute w-64 h-64 bg-orange-400 rounded-full opacity-70 blur-xl top-[-50px] right-[-50px] transform rotate-30"></div>
         {/* Shape 2: Light purple circle */}
-        <div className="absolute w-72 h-72 bg-purple-300 rounded-full opacity-70 blur-xl bottom-[-80px] left-[-80px] transform -rotate-45"></div>
+        <div className="absolute w-72 h-72 bg-[#168AAD] rounded-full opacity-70 blur-xl bottom-[-80px] left-[-80px] transform -rotate-45"></div>
         {/* Shape 3: Light blue circle */}
         <div className="absolute w-40 h-40 bg-blue-300 rounded-full opacity-60 blur-xl top-1/3 left-1/4 transform rotate-15"></div>
         {/* Shape 4: Pinkish half circle (simulated with rounded corners) */}
