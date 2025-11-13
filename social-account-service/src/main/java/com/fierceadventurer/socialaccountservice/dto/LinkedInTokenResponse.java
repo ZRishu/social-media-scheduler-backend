@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class LinkedInTokenResponse {
 
-    @JsonProperty("access_Token")
+    @JsonProperty("access_token")
     private String accessToken;
 
     @JsonProperty("expires_in")
