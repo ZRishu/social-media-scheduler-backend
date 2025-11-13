@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class LinkedInTokenResponse {
 
-    @JsonProperty("accessToken")
+    @JsonProperty("access_Token")
     private String accessToken;
 
     @JsonProperty("expires_in")
@@ -18,7 +18,7 @@ public class LinkedInTokenResponse {
     private String refreshToken;
 
     @JsonProperty("refresh_token_expires_in")
-    private Long refreshTokenExpiresIn;
+    private int refreshTokenExpiresIn;
 
     @JsonProperty("scope")
     private String scope;
