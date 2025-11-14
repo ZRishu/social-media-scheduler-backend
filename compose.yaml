@@ -1,35 +1,5 @@
 services:
-  # --- Messaging Infrastructure ---
-  zookeeper:
-    image: confluentinc/cp-zookeeper:7.3.2
-    container_name: zookeeper
-    networks:
-      - social_media_net
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-
-
-  kafka:
-    image: confluentinc/cp-kafka:7.3.2
-    container_name: kafka
-    networks:
-      - social_media_net
-    depends_on:
-      zookeeper:
-        condition: service_started
-    ports:
-      - "9092:9092"
-    environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka:29092
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_CREATE_TOPICS: "variant-scheduling-topic:1:1,variant-immediate-publish-topic:1:1,social-account-created-topic:1:1,keycloak.user.created:1:1"
-
-  # --- Databases ---
+  # --- Databases (Unchanged) ---
   post-db:
     image: postgres:15
     container_name: post-db
@@ -63,12 +33,12 @@ services:
   analytics-db:
     image: postgres:15
     container_name: analytics-db
-    environment: { POSTGRES_USER: "admin4", POSTGRES_PASSWORD: "password", POSTGRES_DB: "analytics-service-db" }
+    environment: { POSTGRES_USER: "admin4", POSTGRES_PASSWORD: "password", POSTGRES_DB: "analytics-service_db" }
     ports: [ "5003:5432" ]
     volumes: [ "analytics-data:/var/lib/postgresql/data" ]
     networks: [ social_media_net ]
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U admin4 -d analytics-service-db" ]
+      test: [ "CMD-SHELL", "pg_isready -U admin4 -d analytics-service_db" ]
 
   user-db:
     image: postgres:15
@@ -123,7 +93,7 @@ services:
     depends_on:
       keycloak-db:
         condition: service_healthy
-    # healthcheck: REMOVED as requested
+    # --- healthcheck: REMOVED as requested ---
     restart: unless-stopped
 
   # --- Application Gateway ---
@@ -136,7 +106,7 @@ services:
     networks: [ social_media_net ]
     depends_on:
       keycloak:
-        condition: service_started # FIX: Changed from service_healthy
+        condition: service_started # <-- FIX: Changed from service_healthy
     environment:
       - SERVER_PORT=9000
       - spring.cloud.gateway.routes[0].id=user-service
@@ -160,7 +130,6 @@ services:
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://localhost:8088/realms/user-service
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/user-service/protocol/openid-connect/certs
 
-
   # --- Application Services ---
   post-service:
     build:
@@ -169,13 +138,14 @@ services:
     container_name: post-service
     depends_on:
       post-db: { condition: service_healthy }
-      kafka: { condition: service_started } # FIX: Changed from service_healthy
     environment:
       - SERVER_PORT=8080
       - SPRING_DATASOURCE_URL=jdbc:postgresql://post-db:5432/post_service_db
       - SPRING_DATASOURCE_USERNAME=admin1
       - SPRING_DATASOURCE_PASSWORD=password
-      - KAFKA_URL=kafka:29092
+      - KAFKA_URL=${CONFLUENT_BOOTSTRAP_SERVER}
+      - KAFKA_KEY=${CONFLUENT_API_KEY}
+      - KAFKA_SECRET=${CONFLUENT_API_SECRET}
       - CLIENTS_SOCIAL_ACCOUNT_SERVICE_URL=http://social-account-service:8080
       - CLIENTS_ANALYTICS_SERVICE_URL=http://analytics-service:8080
       - CLIENTS_MEDIA_SERVICE_URL=http://media-service:8080
@@ -190,13 +160,14 @@ services:
     container_name: scheduler-service
     depends_on:
       scheduler-db: { condition: service_healthy }
-      kafka: { condition: service_started }
     environment:
       - SERVER_PORT=8080
       - SPRING_DATASOURCE_URL=jdbc:postgresql://scheduler-db:5432/scheduler_service_db
       - SPRING_DATASOURCE_USERNAME=admin2
       - SPRING_DATASOURCE_PASSWORD=password
-      - KAFKA_URL=kafka:29092
+      - KAFKA_URL=${CONFLUENT_BOOTSTRAP_SERVER}
+      - KAFKA_KEY=${CONFLUENT_API_KEY}
+      - KAFKA_SECRET=${CONFLUENT_API_SECRET}
       - CLIENTS_SOCIAL_ACCOUNT_SERVICE_URL=http://social-account-service:8080
       - KAFKA_CLIENTID=scheduler-consumer-docker-1
       - SPRING_JMX_ENABLED=false
@@ -209,13 +180,14 @@ services:
     container_name: social-account-service
     depends_on:
       social-account-db: { condition: service_healthy }
-      kafka: { condition: service_started } # FIX: Changed from service_healthy
     environment:
       - SERVER_PORT=8080
       - SPRING_DATASOURCE_URL=jdbc:postgresql://social-account-db:5432/social_account_service_db
       - SPRING_DATASOURCE_USERNAME=admin3
       - SPRING_DATASOURCE_PASSWORD=password
-      - KAFKA_URL=kafka:29092
+      - KAFKA_URL=${CONFLUENT_BOOTSTRAP_SERVER}
+      - KAFKA_KEY=${CONFLUENT_API_KEY}
+      - KAFKA_SECRET=${CONFLUENT_API_SECRET}
       - LINKEDIN_CLIENT_ID=${LINKEDIN_CLIENT_ID}
       - LINKEDIN_CLIENT_SECRET=${LINKEDIN_CLIENT_SECRET}
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://localhost:8088/realms/user-service
@@ -229,13 +201,14 @@ services:
     container_name: analytics-service
     depends_on:
       analytics-db: { condition: service_healthy }
-      kafka: { condition: service_started }
     environment:
       - SERVER_PORT=8080
       - SPRING_DATASOURCE_URL=jdbc:postgresql://analytics-db:5432/analytics_service_db
       - SPRING_DATASOURCE_USERNAME=admin4
       - SPRING_DATASOURCE_PASSWORD=password
-      - KAFKA_URL=kafka:29092
+      - KAFKA_URL=${CONFLUENT_BOOTSTRAP_SERVER}
+      - KAFKA_KEY=${CONFLUENT_API_KEY}
+      - KAFKA_SECRET=${CONFLUENT_API_SECRET}
       - CLIENTS_SOCIAL_ACCOUNT_SERVICE_URL=http://social-account-service:8080
     networks: [ social_media_net ]
 
@@ -246,14 +219,15 @@ services:
     container_name: user-service
     depends_on:
       user-db: { condition: service_healthy }
-      kafka: { condition: service_started }
-      keycloak: { condition: service_started }
+      keycloak: { condition: service_started } # <-- FIX: Changed from service_healthy
     environment:
       - SERVER_PORT=8080
       - SPRING_DATASOURCE_URL=jdbc:postgresql://user-db:5432/user_service_db
       - SPRING_DATASOURCE_USERNAME=admin5
       - SPRING_DATASOURCE_PASSWORD=password
-      - KAFKA_URL=kafka:29092
+      - KAFKA_URL=${CONFLUENT_BOOTSTRAP_SERVER}
+      - KAFKA_KEY=${CONFLUENT_API_KEY}
+      - KAFKA_SECRET=${CONFLUENT_API_SECRET}
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://localhost:8088/realms/user-service
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/user-service/protocol/openid-connect/certs
     networks: [ social_media_net ]
@@ -280,7 +254,7 @@ services:
       network: host
     container_name: ai-service
     depends_on:
-      keycloak: { condition: service_started }
+      keycloak: { condition: service_started } # <-- FIX: Changed from service_healthy
       media-service: { condition: service_started }
     environment:
       - SERVER_PORT=8080
