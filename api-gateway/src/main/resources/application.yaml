@@ -8,52 +8,41 @@ spring:
   cloud:
     gateway:
       routes:
-        # --- User Service ---
+        # --- These routes use the Docker service names ---
         - id: user-service
-          # When running in Docker, this will be overridden by: http://user-service:8080
-          uri: http://localhost:8085
+          uri: http://user-service:8080
           predicates:
             - Path=/api/v1/users/**
-
-        # --- Post Service ---
         - id: post-service
-          uri: http://localhost:8080
+          uri: http://post-service:8080
           predicates:
             - Path=/api/v1/posts/**
-
-        # --- Social Account Service ---
         - id: social-account-service
-          uri: http://localhost:8082
+          uri: http://social-account-service:8080
           predicates:
             - Path=/api/v1/accounts/**, /api/v1/internal/**
-
-        # --- Analytics Service ---
         - id: analytics-service
-          uri: http://localhost:8083
+          uri: http://analytics-service:8080
           predicates:
             - Path=/api/v1/analytics/**
-
-        # --- Media Service ---
-        - id: media-storage-service
-          uri: http://localhost:8086
+        - id: media-service
+          uri: http://media-service:8080
           predicates:
             - Path=/api/v1/media/**
-
-         # --- AI Service ---
         - id: ai-service
-          uri: http://localhost:8087
+          uri: http://ai-service:8080
           predicates:
             - Path=/api/v1/ai/**
 
-
-  # --- Spring Security Configuration ---
+  # --- Spring Security Configuration (FIXED) ---
   security:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI}
-          # This new line is required to fix the 401 error
-          jwk-set-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI}
+          # These are the INTERNAL Docker network URLs.
+          # This is cleaner and removes the need for compose variables.
+          issuer-uri: http://keycloak:8080/realms/user-service
+          jwk-set-uri: http://keycloak:8080/realms/user-service/protocol/openid-connect/certs
 
 # --- Actuator (for health checks) ---
 management:
@@ -62,6 +51,21 @@ management:
       exposure:
         include: health
 
+# --- SpringDoc (Swagger) Configuration ---
+springdoc:
+  api-docs:
+    groups:
+      enabled: true
+  gateway:
+    discovery:
+      locator:
+        enabled: true
+        discovery-id: api-gateway
+  swagger-ui:
+    oauth:
+      # This points the "Authorize" button to the correct Keycloak client
+      client-id: springdoc-swagger
+      use-pkce-with-authorization-code-grant: true
 
 logging:
   pattern:
