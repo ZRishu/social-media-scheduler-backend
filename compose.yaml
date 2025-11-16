@@ -1,80 +1,69 @@
 services:
   # --- Authentication Service (NO BUILD) ---
-  # This service MUST start first
   keycloak:
     image: quay.io/keycloak/keycloak:latest
     container_name: keycloak
     command: start-dev
     environment:
       - KEYCLOAK_ADMIN=admin
-      - KEYCLOAK_ADMIN_PASSWORD=admin # You can set a strong password here
-      # --- NeonDB Keycloak Config ---
+      - KEYCLOAK_ADMIN_PASSWORD=admin
       - KC_DB=postgres
       - KC_DB_URL_HOST=${NEON_DB_HOST}
       - KC_DB_DATABASE=keycloak_db
       - KC_DB_USERNAME=${NEON_DB_USER}
       - KC_DB_PASSWORD=${NEON_DB_PASSWORD}
       - KC_DB_URL_PROPERTIES=?sslmode=require&channel_binding=require
-      # --- Render Public URL ---
-      - KC_HOSTNAME_URL=http://localhost:8088 # This is still correct for local testing
+      - KC_HOSTNAME_URL=http://localhost:8088
       - KC_HOSTNAME_ADMIN_URL=http://localhost:8088
     ports:
       - "8088:8080"
     networks:
       - social_media_net
-    # No depends_on needed
     restart: unless-stopped
 
   # --- Application Gateway ---
   api-gateway:
     build:
       context: ./api-gateway
-      network: host
     container_name: api-gateway
     ports: [ "9000:9000" ]
     networks: [ social_media_net ]
     depends_on:
-      - keycloak # Wait for Keycloak to start
-    environment:
-      - SERVER_PORT=9000
-      # --- All other environment variables (routes, security) are injected from the .properties file ---
-      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://keycloak:8080/realms/user-service
-      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/user-service/protocol/openid-connect/certs
+      - keycloak
 
   # --- Application Services ---
   post-service:
     build:
       context: ./post-service
-      network: host
     container_name: post-service
     environment:
       - SERVER_PORT=8080
       - SPRING_DATASOURCE_URL=jdbc:postgresql://${NEON_DB_HOST}/post_service_db?sslmode=require&channel_binding=require
       - SPRING_DATASOURCE_USERNAME=${NEON_DB_USER}
       - SPRING_DATASOURCE_PASSWORD=${NEON_DB_PASSWORD}
-      - KAFKA_URL=${KAFKA_URL}
-      - KAFKA_KEY=${KAFKA_KEY}
-      - KAFKA_SECRET=${KAFKA_SECRET}
+      - KAFKA_URL=${CONFLUENT_BOOTSTRAP_SERVER}
+      # --- THIS IS THE FIX ---
+      # We construct the JAAS config string here, not in application.properties
+      - SPRING_KAFKA_PRODUCER_SASL_JAAS_CONFIG=org.apache.kafka.common.security.plain.PlainLoginModule required username="${CONFLUENT_API_KEY}" password="${CONFLUENT_API_SECRET}";
       - CLIENTS_SOCIAL_ACCOUNT_SERVICE_URL=http://social-account-service:8080
       - CLIENTS_ANALYTICS_SERVICE_URL=http://analytics-service:8080
       - CLIENTS_MEDIA_SERVICE_URL=http://media-service:8080
-      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://keycloak:8080/realms/user-service
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://localhost:8088/realms/user-service
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/user-service/protocol/openid-connect/certs
     networks: [ social_media_net ]
 
   scheduler-service:
     build:
       context: ./scheduler-service
-      network: host
     container_name: scheduler-service
     environment:
       - SERVER_PORT=8080
       - SPRING_DATASOURCE_URL=jdbc:postgresql://${NEON_DB_HOST}/scheduler_service_db?sslmode=require&channel_binding=require
       - SPRING_DATASOURCE_USERNAME=${NEON_DB_USER}
       - SPRING_DATASOURCE_PASSWORD=${NEON_DB_PASSWORD}
-      - KAFKA_URL=${KAFKA_URL}
-      - KAFKA_KEY=${KAFKA_KEY}
-      - KAFKA_SECRET=${KAFKA_SECRET}
+      - KAFKA_URL=${CONFLUENT_BOOTSTRAP_SERVER}
+      # --- THIS IS THE FIX ---
+      - SPRING_KAFKA_CONSUMER_SASL_JAAS_CONFIG=org.apache.kafka.common.security.plain.PlainLoginModule required username="${CONFLUENT_API_KEY}" password="${CONFLUENT_API_SECRET}";
       - CLIENTS_SOCIAL_ACCOUNT_SERVICE_URL=http://social-account-service:8080
       - KAFKA_CLIENTID=scheduler-consumer-docker-1
       - SPRING_JMX_ENABLED=false
@@ -83,42 +72,39 @@ services:
   social-account-service:
     build:
       context: ./social-account-service
-      network: host
     container_name: social-account-service
     environment:
       - SERVER_PORT=8080
       - SPRING_DATASOURCE_URL=jdbc:postgresql://${NEON_DB_HOST}/social_account_service_db?sslmode=require&channel_binding=require
       - SPRING_DATASOURCE_USERNAME=${NEON_DB_USER}
       - SPRING_DATASOURCE_PASSWORD=${NEON_DB_PASSWORD}
-      - KAFKA_URL=${KAFKA_URL}
-      - KAFKA_KEY=${KAFKA_KEY}
-      - KAFKA_SECRET=${KAFKA_SECRET}
+      - KAFKA_URL=${CONFLUENT_BOOTSTRAP_SERVER}
+      # --- THIS IS THE FIX ---
+      - SPRING_KAFKA_PRODUCER_SASL_JAAS_CONFIG=org.apache.kafka.common.security.plain.PlainLoginModule required username="${CONFLUENT_API_KEY}" password="${CONFLUENT_API_SECRET}";
       - LINKEDIN_CLIENT_ID=${LINKEDIN_CLIENT_ID}
       - LINKEDIN_CLIENT_SECRET=${LINKEDIN_CLIENT_SECRET}
-      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://keycloak:8080/realms/user-service
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://localhost:8088/realms/user-service
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/user-service/protocol/openid-connect/certs
     networks: [ social_media_net ]
 
   analytics-service:
     build:
       context: ./analytics-service
-      network: host
     container_name: analytics-service
     environment:
       - SERVER_PORT=8080
       - SPRING_DATASOURCE_URL=jdbc:postgresql://${NEON_DB_HOST}/analytics_service_db?sslmode=require&channel_binding=require
       - SPRING_DATASOURCE_USERNAME=${NEON_DB_USER}
       - SPRING_DATASOURCE_PASSWORD=${NEON_DB_PASSWORD}
-      - KAFKA_URL=${KAFKA_URL}
-      - KAFKA_KEY=${KAFKA_KEY}
-      - KAFKA_SECRET=${KAFKA_SECRET}
+      - KAFKA_URL=${CONFLUENT_BOOTSTRAP_SERVER}
+      # --- THIS IS THE FIX ---
+      - SPRING_KAFKA_CONSUMER_SASL_JAAS_CONFIG=org.apache.kafka.common.security.plain.PlainLoginModule required username="${CONFLUENT_API_KEY}" password="${CONFLUENT_API_SECRET}";
       - CLIENTS_SOCIAL_ACCOUNT_SERVICE_URL=http://social-account-service:8080
     networks: [ social_media_net ]
 
   user-service:
     build:
       context: ./user-service
-      network: host
     container_name: user-service
     depends_on:
       - keycloak
@@ -127,31 +113,29 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://${NEON_DB_HOST}/user_service_db?sslmode=require&channel_binding=require
       - SPRING_DATASOURCE_USERNAME=${NEON_DB_USER}
       - SPRING_DATASOURCE_PASSWORD=${NEON_DB_PASSWORD}
-      - KAFKA_URL=${KAFKA_URL}
-      - KAFKA_KEY=${KAFKA_KEY}
-      - KAFKA_SECRET=${KAFKA_SECRET}
-      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://keycloak:8080/realms/user-service
+      - KAFKA_URL=${CONFLUENT_BOOTSTRAP_SERVER}
+      # --- THIS IS THE FIX ---
+      - SPRING_KAFKA_CONSUMER_SASL_JAAS_CONFIG=org.apache.kafka.common.security.plain.PlainLoginModule required username="${CONFLUENT_API_KEY}" password="${CONFLUENT_API_SECRET}";
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://localhost:8088/realms/user-service
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/user-service/protocol/openid-connect/certs
     networks: [ social_media_net ]
 
   media-service:
     build:
       context: ./media-storage-service
-      network: host
     container_name: media-service
     environment:
       - SERVER_PORT=8080
       - SPRING_DATASOURCE_URL=jdbc:postgresql://${NEON_DB_HOST}/media_service_db?sslmode=require&channel_binding=require
       - SPRING_DATASOURCE_USERNAME=${NEON_DB_USER}
       - SPRING_DATASOURCE_PASSWORD=${NEON_DB_PASSWORD}
-      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://keycloak:8080/realms/user-service
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://localhost:8088/realms/user-service
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/user-service/protocol/openid-connect/certs
     networks: [ social_media_net ]
 
   ai-service:
     build:
       context: ./ai-service
-      network: host
     container_name: ai-service
     depends_on:
       - keycloak
@@ -160,7 +144,7 @@ services:
       - SERVER_PORT=8080
       - GROQ_API_KEY=${GROQ_API_KEY}
       - CLIENTS_MEDIA_SERVICE_URL=http://media-service:8080
-      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://keycloak:8080/realms/user-service
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://localhost:8088/realms/user-service
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/user-service/protocol/openid-connect/certs
     networks: [ social_media_net ]
 
