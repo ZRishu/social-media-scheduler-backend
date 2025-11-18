@@ -10,14 +10,14 @@ import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/accounts/{accountId}/quota")
+@RequestMapping("/api/v1/accounts/{accountId}")
 @RequiredArgsConstructor
 public class RateLimitQuotaController {
 
     private final RateLimitService rateLimitService;
     private final AccountQueryService  accountQueryService;
 
-    @GetMapping
+    @GetMapping("/quota")
     public ResponseEntity<RateLimitQuotaDto> getQuotaForAccount(@PathVariable UUID accountId){
         RateLimitQuotaDto quota = accountQueryService.getAccountById(accountId).getRateLimitQuota();
         return ResponseEntity.ok(quota);
