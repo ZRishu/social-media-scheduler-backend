@@ -10,7 +10,7 @@ import java.util.UUID;
 
 
 public interface PostService {
-    PostResponseDto createPost(PostRequestDto postRequestDto);
+    PostResponseDto createPost(PostRequestDto postRequestDto, UUID userId);
     PostResponseDto updatePostById(UUID postId , PostRequestDto postRequestDto);
     PostResponseDto getPostById(UUID postId);
     Page<PostResponseDto> getAllPosts(Pageable pageable);
