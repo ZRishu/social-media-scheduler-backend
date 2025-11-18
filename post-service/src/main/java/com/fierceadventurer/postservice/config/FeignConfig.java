@@ -23,7 +23,7 @@ public class FeignConfig {
                 if(authentication != null && authentication.getCredentials() instanceof Jwt){
                     Jwt jwt = (Jwt) authentication.getCredentials();
                     String tokenValue = jwt.getTokenValue();
-                    template.header("Authorization" , "Bearer" + tokenValue);
+                    template.header("Authorization" , "Bearer " + tokenValue);
                     log.debug("Feign Interceptor: Added Authorization header to outgoing request.");
                 }
                 else {
