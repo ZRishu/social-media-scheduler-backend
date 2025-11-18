@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import LinkedIn from '../assets/LinkedIn.png';
 import Eyeopen from '../assets/eyeopen.png';
-import Insta from '../assets/instagram.png';
-import faceBook from '../assets/facebook.png';
+import Insta from '../assets/instagram.svg';
+import faceBook from '../assets/facebook.svg';
 import X from '../assets/X.png';
 import { NavLink,Link } from 'react-router-dom';
 
@@ -12,39 +12,32 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  const handleLogin = (e) => {
-    e.preventDefault();
-    console.log('Logging in with:', { email, password, rememberMe });
-    alert('Login functionality not implemented in this demo.');
-  };
 
   return (
     <div className="min-h-screen flex font-sans text-gray-800 ">
-      <div className="flex-1 flex flex-col justify-center items-center bg-white opactity-5 text-center">
-        {/* <div className="text-5xl font-bold text-[#184E77] mb-5 self-center pr-20 ml-20">
-          Post schedular
-        </div> */}
+      <div className="flex-1 flex flex-col justify-center items-center bg-white text-center">
         <h2 className="text-4xl font-bold mb-8 mr-36 ml-36">Login</h2>
 
         <div className='grid grid-cols-2 gap-x-8'>
           <button className="flex items-center justify-center w-[200px] h-[65px] py-3 px-3 border border-gray-300 rounded-lg bg-white cursor-pointer text-sm mb-6 hover:bg-gray-50 transition-colors duration-300">
-          Sign in with 
+          Sign in with
             <p className='font-bold pl-1'></p>
             <img src={LinkedIn} alt="linkedin logo" className="h-7 mr-3" />
           </button>
           <button className="flex items-center justify-center w-[200px] h-[65px] py-3 px-3 border border-gray-300 rounded-lg bg-white cursor-pointer text-sm mb-6 hover:bg-gray-50 transition-colors duration-300">
-          Sign in with 
+          Sign in with
             <p className='font-bold pl-1'></p>
-            <img src={Insta} alt="linkedin logo" className="h-8 mr-3" />
+            <img src={Insta} alt="instagram logo" className="h-8 mr-3" />
           </button>
           <button className="flex items-center justify-center w-[200px] h-[65px] py-3 px-3 border border-gray-300 rounded-lg bg-white cursor-pointer text-sm mb-6 hover:bg-gray-50 transition-colors duration-300">
-          Sign in with 
+          Sign in with
             <p className='font-bold pl-1'></p>
             <img src={faceBook} alt="facebook logo" className="h-9 mr-3" />
           </button>
           <button className="flex items-center justify-center w-[200px] h-[65px] py-3 px-3 border border-gray-300 rounded-lg bg-white cursor-pointer text-sm mb-6 hover:bg-gray-50 transition-colors duration-300">
-          Sign in with 
+          Sign in with
             <p className='font-bold pl-1'></p>
             <img src={X} alt="X logo" className="h-8 mr-3" />
           </button>
@@ -54,7 +47,7 @@ const Login = () => {
           Or sign in with id
         </div>
 
-        <form onSubmit={handleLogin} className="w-3/5">
+        <form className="w-3/5">
           <div className="mb-5 text-left">
             <label htmlFor="email" className="block mb-2 font-bold text-sm">
               Email ID
@@ -106,8 +99,9 @@ const Login = () => {
             </a>
           </div>
 
+          {errorMessage && <p className="text-red-500 text-sm mb-4">{errorMessage}</p>}
+
           <Link to="/postCreation"
-            type="submit"
             className="w-full py-4 border-none inline-block rounded-lg bg-gradient-to-r from-[#184E77] to-[#168AAD] text-white text-xl font-bold cursor-pointer mb-8 hover:opacity-90 transition-opacity duration-300"
           >
             Login
