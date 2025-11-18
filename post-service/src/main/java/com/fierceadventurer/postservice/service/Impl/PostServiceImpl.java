@@ -96,7 +96,5 @@ public class PostServiceImpl implements PostService {
         Post deletedPost = postRepository.save(postTodelete);
         log.debug("Marked post as deleted with id {}", postId);
 
-
-
     }
 }
