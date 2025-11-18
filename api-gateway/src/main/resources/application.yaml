@@ -41,7 +41,7 @@ spring:
         jwt:
           # These are the INTERNAL Docker network URLs.
           # This is cleaner and removes the need for compose variables.
-          issuer-uri: http://keycloak:8080/realms/user-service
+          issuer-uri: http://keycloak:8088/realms/user-service
           jwk-set-uri: http://keycloak:8080/realms/user-service/protocol/openid-connect/certs
 
 # --- Actuator (for health checks) ---
