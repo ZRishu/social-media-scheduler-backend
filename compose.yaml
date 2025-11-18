@@ -23,11 +23,35 @@ services:
   api-gateway:
     build:
       context: ./api-gateway
+      network: host
     container_name: api-gateway
     ports: [ "9000:9000" ]
     networks: [ social_media_net ]
     depends_on:
-      - keycloak
+      keycloak:
+        condition: service_started # FIX: Changed from service_healthy
+    environment:
+      - SERVER_PORT=9000
+      - spring.cloud.gateway.routes[0].id=user-service
+      - spring.cloud.gateway.routes[0].uri=http://user-service:8080
+      - spring.cloud.gateway.routes[0].predicates[0]=Path=/api/v1/users/**
+      - spring.cloud.gateway.routes[1].id=post-service
+      - spring.cloud.gateway.routes[1].uri=http://post-service:8080
+      - spring.cloud.gateway.routes[1].predicates[0]=Path=/api/v1/posts/**
+      - spring.cloud.gateway.routes[2].id=social-account-service
+      - spring.cloud.gateway.routes[2].uri=http://social-account-service:8080
+      - spring.cloud.gateway.routes[2].predicates[0]=Path=/api/v1/accounts/**, /api/v1/internal/**
+      - spring.cloud.gateway.routes[3].id=analytics-service
+      - spring.cloud.gateway.routes[3].uri=http://analytics-service:8080
+      - spring.cloud.gateway.routes[3].predicates[0]=Path=/api/v1/analytics/**
+      - spring.cloud.gateway.routes[4].id=media-service
+      - spring.cloud.gateway.routes[4].uri=http://media-service:8080
+      - spring.cloud.gateway.routes[4].predicates[0]=Path=/api/v1/media/**
+      - spring.cloud.gateway.routes[5].id=ai-service
+      - spring.cloud.gateway.routes[5].uri=http://ai-service:8080
+      - spring.cloud.gateway.routes[5].predicates[0]=Path=/api/v1/ai/**
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://localhost:8088/realms/user-service
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/user-service/protocol/openid-connect/certs
 
   # --- Producers ---
   post-service:
@@ -61,6 +85,9 @@ services:
       - KAFKA_SECRET=${KAFKA_SECRET}
       - LINKEDIN_CLIENT_ID=${LINKEDIN_CLIENT_ID}
       - LINKEDIN_CLIENT_SECRET=${LINKEDIN_CLIENT_SECRET}
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://localhost:8088/realms/user-service
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/user-service/protocol/openid-connect/certs
+
     networks: [ social_media_net ]
 
   # --- Consumers ---
@@ -94,6 +121,9 @@ services:
       - KAFKA_URL=${KAFKA_URL}
       - KAFKA_KEY=${KAFKA_KEY}
       - KAFKA_SECRET=${KAFKA_SECRET}
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://localhost:8088/realms/user-service
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/user-service/protocol/openid-connect/certs
+
     networks: [ social_media_net ]
 
   analytics-service:
@@ -121,6 +151,9 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://${NEON_DB_HOST}/media_service_db?sslmode=require
       - SPRING_DATASOURCE_USERNAME=${NEON_DB_USER}
       - SPRING_DATASOURCE_PASSWORD=${NEON_DB_PASSWORD}
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://localhost:8088/realms/user-service
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/user-service/protocol/openid-connect/certs
+
     networks: [ social_media_net ]
 
   ai-service:
@@ -134,6 +167,9 @@ services:
       - SERVER_PORT=8080
       - GROQ_API_KEY=${GROQ_API_KEY}
       - CLIENTS_MEDIA_SERVICE_URL=http://media-service:8080
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://localhost:8088/realms/user-service
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/user-service/protocol/openid-connect/certs
+
     networks: [ social_media_net ]
 
 volumes:
