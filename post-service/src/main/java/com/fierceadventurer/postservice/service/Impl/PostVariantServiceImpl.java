@@ -20,6 +20,7 @@ import com.fierceadventurer.postservice.repository.PostVariantRepository;
 import com.fierceadventurer.postservice.service.PostVariantService;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -34,6 +35,7 @@ import static org.apache.kafka.common.requests.FetchMetadata.log;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class PostVariantServiceImpl implements PostVariantService {
     private final PostVariantRepository postVariantRepository;
     private final PostRepository postRepository;
@@ -51,6 +53,7 @@ public class PostVariantServiceImpl implements PostVariantService {
             socialAccountClient.validateAccountOwnerShip(createDto.getSocialAccountId(), userId);
         }
         catch(Exception e){
+            log.error("Failed to validate account ownership. Reason: ", e);
             throw new AccessDeniedException("User does not own social account: " + createDto.getSocialAccountId());
         }
 
