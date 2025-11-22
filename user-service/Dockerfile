@@ -1,31 +1,34 @@
-# --- Stage 1: Build the application ---
-FROM maven:3.9.6-eclipse-temurin-21 AS build
+# ======================
+# STAGE 1: The "Builder"
+# This stage builds the code. It is large but temporary.
+# ======================
+FROM maven:3.9.6-eclipse-temurin-21 AS builder
 
 WORKDIR /app
 
-# Copy only the pom.xml to leverage Docker's layer cache
+# 1. Copy POM and download dependencies first
+# This step is cached by Docker. It only re-runs if pom.xml changes.
 COPY pom.xml .
-
-# Download all dependencies
+# This uses the "network: host" from your docker-compose.yml to get internet
 RUN mvn dependency:go-offline
 
-# Copy your source code
+# 2. Copy the rest of the source code
 COPY src ./src
 
-# Build the project and create the executable JAR, skipping tests
+# 3. Build the application and skip tests
+# This creates the .jar file in /app/target/
 RUN mvn clean package -DskipTests
 
-
-# --- Stage 2: Create the final, lightweight image ---
+# ======================
+# STAGE 2: The "Final Image"
+# This stage is lightweight and secure for production.
+# ======================
 FROM eclipse-temurin:21-jre-jammy
 
 WORKDIR /app
 
-# Copy only the built JAR from the 'build' stage
-COPY --from=build /app/target/*.jar app.jar
+# 4. Copy the built .jar file from the 'builder' stage
+COPY --from=builder /app/target/*-SNAPSHOT.jar app.jar
 
-# Expose the port your Spring Boot application runs on
-EXPOSE 8080
-
-# The command to run the application when the container starts
+# 5. Set the entrypoint to run the application
 ENTRYPOINT ["java", "-jar", "app.jar"]

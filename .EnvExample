@@ -11,7 +11,15 @@
 # === Shared Variables (Used by multiple services) ===
 
 # URL for the Kafka broker (points to the port exposed on your host)
-KAFKA_URL=localhost:9092
+# URL for the Kafka broker (points to the port exposed on your host)
+CONFLUENT_BOOTSTRAP_SERVER=
+CONFLUENT_API_KEY=
+CONFLUENT_API_SECRET=
+GROQ_API_KEY=
+
+
+LINKEDIN_CLIENT_ID=
+LINKEDIN_CLIENT_SECRET=
 
 # Feign Client URLs (for local IDE-to-container communication)
 CLIENTS_SOCIAL_ACCOUNT_SERVICE_URL=http://localhost:8082

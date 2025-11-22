@@ -28,10 +28,10 @@ public class ScheduledJob {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID jobId;
 
-    @Column(nullable = false , updatable = false)
+    @Column(name = "post_variant_id", nullable = false )
     private UUID postVariantId;
 
-    @Column(nullable = false, updatable = false)
+    @Column(name = "social_account_id",nullable = false)
     private UUID socialAccountId;
 
     @Enumerated(EnumType.STRING)

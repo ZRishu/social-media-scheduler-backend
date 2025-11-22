@@ -2,9 +2,7 @@ package com.fierceadventurer.postservice.service.Impl;
 
 import com.fierceadventurer.postservice.dto.PostRequestDto;
 import com.fierceadventurer.postservice.dto.PostResponseDto;
-import com.fierceadventurer.postservice.entity.MediaAsset;
 import com.fierceadventurer.postservice.entity.Post;
-import com.fierceadventurer.postservice.entity.PostVariant;
 import com.fierceadventurer.postservice.enums.PostStatus;
 import com.fierceadventurer.postservice.exception.ResourceNotFoundException;
 import com.fierceadventurer.postservice.mapper.PostRequestMapper;
@@ -13,12 +11,12 @@ import com.fierceadventurer.postservice.repository.PostRepository;
 import com.fierceadventurer.postservice.service.PostService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 
@@ -33,9 +31,17 @@ public class PostServiceImpl implements PostService {
 
     @Override
     @Transactional
-    public PostResponseDto createPost(PostRequestDto postRequestDto) {
+    public PostResponseDto createPost(PostRequestDto postRequestDto, UUID userId) {
+        log.info("Creating post for user: {}", userId);
+
         Post post = postRequestMapper.toEntity(postRequestDto);
-        post.setStatus(PostStatus.PUBLISHED);
+        post.setUserId(userId);
+        if (post.getStatus() == null) {
+            post.setStatus(PostStatus.DRAFT);
+        }
+        if (post.getDatePosted() == null) {
+            post.setDatePosted(LocalDateTime.now());
+        }
         if (post.getMediaAssets() != null) {
             post.getMediaAssets().forEach(mediaAsset -> mediaAsset.setPost(post));
         }
@@ -89,8 +95,6 @@ public class PostServiceImpl implements PostService {
         postTodelete.setStatus(PostStatus.DELETED);
         Post deletedPost = postRepository.save(postTodelete);
         log.debug("Marked post as deleted with id {}", postId);
-
-
 
     }
 }

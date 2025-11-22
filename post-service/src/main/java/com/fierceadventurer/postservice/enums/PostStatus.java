@@ -5,7 +5,7 @@ public enum PostStatus {
     UPDATED,
     FAILED,
     PUBLISHED,
-    DELETED
+    DRAFT, DELETED
 
 
 }

@@ -203,4 +203,15 @@ public class SocialAccountServiceImpl implements SocialAccountService {
 
 
     }
+
+
+    @Override
+    public String publishContent(UUID accountId, PublishRequestDto requestDto) {
+        // 1. Get valid token
+        String accessToken = getActiveAccessToken(accountId);
+        SocialAccount account = socialAccountRepository.findById(accountId).orElseThrow();
+
+        // 2. Call LinkedIn Client
+        return linkedInConnectClient.publishPost(account.getExternalId(), accessToken, requestDto);
+    }
 }

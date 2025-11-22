@@ -2,6 +2,7 @@ package com.fierceadventurer.socialaccountservice.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -18,12 +19,18 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers(HttpMethod.POST, "/api/v1/accounts/{accountId}/publish").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/accounts/{accountId}/check").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/accounts/{accountId}/decrement-quota").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/accounts/{accountId}/validate-owner").permitAll()
                         .requestMatchers("/actuator/health",
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**").permitAll()
+
                         .requestMatchers("/api/v1/accounts/**").authenticated()
-                        .requestMatchers("api/v1/internal/**").authenticated()
+                        .requestMatchers("/api/v1/internal/**").authenticated()
+
                         .anyRequest().denyAll()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2

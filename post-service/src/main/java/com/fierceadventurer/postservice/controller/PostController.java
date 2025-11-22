@@ -2,8 +2,6 @@ package com.fierceadventurer.postservice.controller;
 
 import com.fierceadventurer.postservice.dto.PostRequestDto;
 import com.fierceadventurer.postservice.dto.PostResponseDto;
-import com.fierceadventurer.postservice.entity.MediaAsset;
-import com.fierceadventurer.postservice.entity.PostVariant;
 import com.fierceadventurer.postservice.service.PostService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +9,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -23,9 +22,12 @@ public class PostController {
     private final PostService postService;
 
     @PostMapping
-    public ResponseEntity<PostResponseDto> createPost(@Valid @RequestBody PostRequestDto postRequestDto) {
-        PostResponseDto createdPost = postService.createPost(postRequestDto);
-        return new ResponseEntity<>(createdPost, HttpStatus.CREATED);
+    public ResponseEntity<PostResponseDto> createPost(@Valid @RequestBody PostRequestDto postRequestDto,
+                                                      JwtAuthenticationToken token) {
+        String userIdString = token.getTokenAttributes().get("sub").toString();
+        UUID userId = UUID.fromString(userIdString);
+        PostResponseDto createdPost = postService.createPost(postRequestDto, userId);
+        return ResponseEntity.status(HttpStatus.CREATED).body(postService.createPost(postRequestDto , userId));
     }
 
     @GetMapping("/{postId}")

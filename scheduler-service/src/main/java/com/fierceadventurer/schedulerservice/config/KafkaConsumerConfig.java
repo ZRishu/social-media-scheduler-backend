@@ -1,4 +1,4 @@
-package com.fierceadventurer.schedulerservice.Config;
+package com.fierceadventurer.schedulerservice.config;
 
 import com.fierceadventurer.schedulerservice.events.VariantReadyForSchedulingEvent;
 import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
