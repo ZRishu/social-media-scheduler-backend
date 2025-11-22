@@ -1,6 +1,7 @@
 package com.fierceadventurer.socialaccountservice.service;
 
 import com.fierceadventurer.socialaccountservice.dto.CreateSocialAccountRequestDto;
+import com.fierceadventurer.socialaccountservice.dto.PublishRequestDto;
 import com.fierceadventurer.socialaccountservice.dto.SocialAccountResponseDto;
 import com.fierceadventurer.socialaccountservice.entities.SocialAccount;
 
@@ -14,4 +15,7 @@ public interface SocialAccountService {
     void markedAccountTokenExpired(UUID accountId);
     String getActiveAccessToken(UUID accountId);
     void validateAccountOwnership(UUID accountId, UUID userId);
+
+    String publishContent(UUID accountId, PublishRequestDto requestDto);
+
 }

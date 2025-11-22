@@ -1,6 +1,7 @@
 package com.fierceadventurer.socialaccountservice.controller;
 
 import com.fierceadventurer.socialaccountservice.dto.CreateSocialAccountRequestDto;
+import com.fierceadventurer.socialaccountservice.dto.PublishRequestDto;
 import com.fierceadventurer.socialaccountservice.dto.SocialAccountResponseDto;
 import com.fierceadventurer.socialaccountservice.repository.SocialAccountRepository;
 import com.fierceadventurer.socialaccountservice.service.AccountQueryService;
@@ -76,5 +77,11 @@ public class SocialAccountController {
         socialAccountService.validateAccountOwnership(accountId , userId);
         SocialAccountResponseDto account = accountQueryService.getAccountById(accountId);
         return ResponseEntity.ok(account);
+    }
+
+    @PostMapping("/{accountId}/publish")
+    public ResponseEntity<String> publishPost(@PathVariable UUID accountId, @RequestBody PublishRequestDto requestDto) {
+        String postId = socialAccountService.publishContent(accountId, requestDto);
+        return ResponseEntity.ok(postId);
     }
 }

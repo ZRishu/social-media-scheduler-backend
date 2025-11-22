@@ -19,9 +19,6 @@ import java.util.UUID;
 public class PublishAttemptController {
     private final JobQueryService  jobQueryService;
 
-
-
-
     @GetMapping
     public ResponseEntity<List<PublishAttemptDto>> getAttemptById(@PathVariable UUID jobId) {
         List<PublishAttemptDto> attempts = jobQueryService.getJobById(jobId).getAttempts();
