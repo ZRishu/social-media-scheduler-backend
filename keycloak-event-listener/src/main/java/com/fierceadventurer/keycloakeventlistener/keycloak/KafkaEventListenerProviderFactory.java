@@ -42,7 +42,7 @@ public class KafkaEventListenerProviderFactory implements EventListenerProviderF
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG , StringSerializer.class.getName());
 
         props.put("security.protocol", "SASL_SSL");
-        props.put("security.mechanism" , "PLAIN");
+        props.put("sasl.mechanism" , "PLAIN");
         String jaas = String.format("org.apache.kafka.common.security.plain.PlainLoginModule required username=\"%s\" password=\"%s\";", apiKey, apiSecret);
 
         props.put("sasl.jaas.config" , jaas);
