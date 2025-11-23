@@ -1,6 +1,7 @@
 package com.fierceadventurer.schedulerservice.service.impl;
 
 import com.fierceadventurer.schedulerservice.client.SocialAccountClient;
+import com.fierceadventurer.schedulerservice.dto.PublishResponseDto;
 import com.fierceadventurer.schedulerservice.dto.PublishRequestDto;
 import com.fierceadventurer.schedulerservice.dto.ScheduledJobDto;
 import com.fierceadventurer.schedulerservice.dto.UpdateJobRequestDto;
@@ -115,8 +116,8 @@ public class JobExecutionServiceImpl implements JobExecutionService {
             request.setMediaUrls(mediaUrlStrings);
 
             // 3. REAL API CALL (Synchronous)
-            String providerId = socialAccountClient.publishPost(job.getSocialAccountId(), request);
-
+            PublishResponseDto response = socialAccountClient.publishPost(job.getSocialAccountId(), request);
+            String providerId = response.getId();
             log.info("Published successfully! Provider ID: {}", providerId);
 
             // 4. Success State

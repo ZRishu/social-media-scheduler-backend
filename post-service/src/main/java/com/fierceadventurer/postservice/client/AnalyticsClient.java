@@ -7,8 +7,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.UUID;
 
-@FeignClient(name = "analytics-service", url = "${clients.analytics-service.url}")
+@FeignClient(name = "analytics-service", url = "${clients.analytics-service.url}",configuration = FeignClient.class)
 public interface AnalyticsClient {
-    @GetMapping("/api/v1/analytics.{socialAccountId}/next-best-time")
+    @GetMapping("/api/v1/analytics/{socialAccountId}/next-best-time")
     NextBestTimeResponseDto getNextBestTime(@PathVariable("socialAccountId") UUID socialAccountId);
 }

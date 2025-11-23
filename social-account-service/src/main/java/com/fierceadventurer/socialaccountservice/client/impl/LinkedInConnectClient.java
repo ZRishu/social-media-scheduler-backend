@@ -22,11 +22,9 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestTemplate;
 
-
+import java.util.Collections;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @Slf4j
 @Component
@@ -157,7 +155,17 @@ public class LinkedInConnectClient {
         Map<String, Object> shareCommentary = new HashMap<>();
         shareCommentary.put("text", requestDto.getContent());
         shareContent.put("shareCommentary", shareCommentary);
-        shareContent.put("shareMediaCategory", "NONE");
+
+        if(requestDto.getMediaUrls() != null && !requestDto.getMediaUrls().isEmpty()){
+            shareContent.put("shareMediaCategory", "ARTICLE");
+            Map<String, Object> media = new HashMap<>();
+            media.put("status","READY");
+            media.put("originalUrl",requestDto.getMediaUrls().get(0));
+            shareContent.put("media", Collections.singletonList(media));
+        }
+        else {
+            shareContent.put("shareMediaCategory", "NONE");
+        }
 
         specificContent.put("com.linkedin.ugc.ShareContent", shareContent);
         bodyMap.put("specificContent", specificContent);

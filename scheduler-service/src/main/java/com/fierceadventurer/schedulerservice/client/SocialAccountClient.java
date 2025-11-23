@@ -1,5 +1,6 @@
 package com.fierceadventurer.schedulerservice.client;
 import com.fierceadventurer.schedulerservice.config.SchedulerFeignConfiguration;
+import com.fierceadventurer.schedulerservice.dto.PublishResponseDto;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.MediaType;
 
@@ -18,7 +19,7 @@ public interface SocialAccountClient {
     void checkAndDecrementQuota(@PathVariable("accountId") UUID accountId);
 
     @PostMapping(value = "/api/v1/accounts/{accountId}/publish",  consumes = MediaType.APPLICATION_JSON_VALUE)
-    String publishPost(@PathVariable("accountId") UUID accountId, @RequestBody PublishRequestDto publishRequestDto);
+    PublishResponseDto publishPost(@PathVariable("accountId") UUID accountId, @RequestBody PublishRequestDto publishRequestDto);
 
 }
 
