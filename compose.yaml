@@ -1,7 +1,8 @@
 services:
   # --- Authentication ---
   keycloak:
-    image: quay.io/keycloak/keycloak:latest
+    build:
+      context: ./keycloak-event-listener
     container_name: keycloak
     command: start-dev
     environment:
@@ -13,6 +14,10 @@ services:
       - KC_DB_PASSWORD=${NEON_DB_PASSWORD}
       - KC_HOSTNAME_URL=http://localhost:8088
       - KC_HOSTNAME_ADMIN_URL=http://localhost:8088
+      - KAFKA_URL=${KAFKA_URL}
+      - KAFKA_KEY=${KAFKA_KEY}
+      - KAFKA_SECRET=${KAFKA_SECRET}
+
     ports:
       - "8088:8080"
     networks:
