@@ -11,7 +11,7 @@
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
-        <keycloak.version>24.0.0</keycloak.version> <!-- Matches recent Keycloak versions -->
+        <keycloak.version>24.0.0</keycloak.version>
         <kafka.version>3.6.1</kafka.version>
     </properties>
 
@@ -36,30 +36,31 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- Kafka Client (Must be packaged into the JAR) -->
+        <!-- LOGGING FIX: Needed for compilation -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.36</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Kafka Client (Packaged into JAR) -->
         <dependency>
             <groupId>org.apache.kafka</groupId>
             <artifactId>kafka-clients</artifactId>
             <version>${kafka.version}</version>
         </dependency>
 
-        <!-- Jackson for JSON -->
+        <!-- Jackson (Packaged into JAR) -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <version>2.15.3</version>
         </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>2.0.17</version>
-            <scope>compile</scope>
-        </dependency>
     </dependencies>
 
     <build>
         <plugins>
-            <!-- Shade Plugin: Bundles Kafka/Jackson inside this JAR -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
