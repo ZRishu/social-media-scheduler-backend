@@ -47,8 +47,12 @@ public class KafkaEventListenerProviderFactory implements EventListenerProviderF
 
         props.put("sasl.jaas.config" , jaas);
 
-        this.producer = new KafkaProducer<>(props);
-        log.info("Kafka Producer initialized for Keycloak.");
+        try {
+            this.producer = new KafkaProducer<>(props);
+            log.info("Kafka Producer initialized for Keycloak.");
+        } catch (Exception e) {
+            log.error("FAILED to initialize Kafka Producer", e);
+        }
 
     }
 

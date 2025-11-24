@@ -8,6 +8,8 @@ import org.keycloak.events.Event;
 import org.keycloak.events.EventListenerProvider;
 import org.keycloak.events.EventType;
 import org.keycloak.events.admin.AdminEvent;
+import org.keycloak.events.admin.OperationType;
+import org.keycloak.events.admin.ResourceType;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmProvider;
 import org.keycloak.models.UserModel;
@@ -16,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
+
 
 
 public class KafkaEventListenerProvider implements EventListenerProvider {
@@ -32,13 +35,39 @@ public class KafkaEventListenerProvider implements EventListenerProvider {
 
     @Override
     public void onEvent(Event event) {
+        System.out.println(">>> EVENT: Received User Event: " + event.getType());
+
+
         if(EventType.REGISTER.equals(event.getType())){
             log.info("Caught REGISTER event for User ID: {}", event.getUserId());
             sendUserToKafka(event.getUserId(), event.getRealmId());
         }
+        log.info("CRITICAL: Failed to process Kafka event, but allowing user creation to proceed.");
+
+    }
+
+    @Override
+    public void onEvent(AdminEvent adminEvent, boolean includeRepresentation) {
+        System.out.println(">>> ADMIN EVENT: " + adminEvent.getOperationType() + " on " + adminEvent.getResourceType());
+
+        // Check if Admin Created a User
+        if (ResourceType.USER.equals(adminEvent.getResourceType())
+                && OperationType.CREATE.equals(adminEvent.getOperationType())) {
+
+            String path = adminEvent.getResourcePath();
+            String userId = path.startsWith("users/") ? path.substring(6) : path;
+
+            log.info("Caught ADMIN USER CREATE for User ID: {}", userId);
+            sendUserToKafka(userId, adminEvent.getRealmId());
+        }
     }
 
     private void sendUserToKafka(String userId, String realmId) {
+
+        if (this.producer == null) {
+            log.error("Kafka Producer is NULL. Check Factory logs.");
+            return;
+        }
         try{
             RealmProvider realmProvider = session.realms();
             UserModel user = session.users().getUserById(realmProvider.getRealm(realmId),userId);
@@ -69,12 +98,9 @@ public class KafkaEventListenerProvider implements EventListenerProvider {
 
         } catch (JsonProcessingException e) {
             log.error("Error processing user registration event", e);
+            e.printStackTrace();
+
         }
-    }
-
-    @Override
-    public void onEvent(AdminEvent adminEvent, boolean b) {
-
     }
 
     @Override
