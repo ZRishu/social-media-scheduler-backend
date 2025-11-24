@@ -34,7 +34,7 @@ services:
     networks: [ social_media_net ]
     depends_on:
       keycloak:
-        condition: service_started # FIX: Changed from service_healthy
+        condition: service_started
     environment:
       - SERVER_PORT=9000
       - spring.cloud.gateway.routes[0].id=user-service
@@ -158,7 +158,6 @@ services:
       - SPRING_DATASOURCE_PASSWORD=${NEON_DB_PASSWORD}
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://localhost:8088/realms/user-service
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/user-service/protocol/openid-connect/certs
-
     networks: [ social_media_net ]
 
   ai-service:
@@ -174,7 +173,6 @@ services:
       - CLIENTS_MEDIA_SERVICE_URL=http://media-service:8080
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://localhost:8088/realms/user-service
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/user-service/protocol/openid-connect/certs
-
     networks: [ social_media_net ]
 
 volumes:
