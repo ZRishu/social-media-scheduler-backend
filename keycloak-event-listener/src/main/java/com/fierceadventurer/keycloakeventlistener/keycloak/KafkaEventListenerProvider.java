@@ -35,30 +35,31 @@ public class KafkaEventListenerProvider implements EventListenerProvider {
 
     @Override
     public void onEvent(Event event) {
-        System.out.println(">>> EVENT: Received User Event: " + event.getType());
-
-
-        if(EventType.REGISTER.equals(event.getType())){
-            log.info("Caught REGISTER event for User ID: {}", event.getUserId());
-            sendUserToKafka(event.getUserId(), event.getRealmId());
+        try {
+            if(EventType.REGISTER.equals(event.getType())){
+                log.info("Caught REGISTER event for User ID: {}", event.getUserId());
+                sendUserToKafka(event.getUserId(), event.getRealmId());
+            }
+        } catch (Exception e) {
+            log.info("CRITICAL: Failed to process Kafka event, but allowing user creation to proceed.");
         }
-        log.info("CRITICAL: Failed to process Kafka event, but allowing user creation to proceed.");
-
     }
 
     @Override
     public void onEvent(AdminEvent adminEvent, boolean includeRepresentation) {
-        System.out.println(">>> ADMIN EVENT: " + adminEvent.getOperationType() + " on " + adminEvent.getResourceType());
+        try {
+            if (ResourceType.USER.equals(adminEvent.getResourceType())
+                    && OperationType.CREATE.equals(adminEvent.getOperationType())) {
 
-        // Check if Admin Created a User
-        if (ResourceType.USER.equals(adminEvent.getResourceType())
-                && OperationType.CREATE.equals(adminEvent.getOperationType())) {
+                String path = adminEvent.getResourcePath();
+                String userId = path.startsWith("users/") ? path.substring(6) : path;
 
-            String path = adminEvent.getResourcePath();
-            String userId = path.startsWith("users/") ? path.substring(6) : path;
+                log.info("Caught ADMIN USER CREATE for User ID: {}", userId);
+                sendUserToKafka(userId, adminEvent.getRealmId());
+            }
+        } catch (Exception e) {
+            log.error("CRITICAL: Kafka Plugin failed (Admin), but allowing user creation.", e);
 
-            log.info("Caught ADMIN USER CREATE for User ID: {}", userId);
-            sendUserToKafka(userId, adminEvent.getRealmId());
         }
     }
 
@@ -92,12 +93,12 @@ public class KafkaEventListenerProvider implements EventListenerProvider {
                     log.error("Failed to send user to Kafka", exception);
                 }
                 else {
-                    log.info("Successfully sent user {} to topic {}" , userId , metadata.topic());
+                    log.info("SYNC SUCCESS: sent user {} to topic {}" , userId , metadata.topic());
                 }
             });
 
         } catch (JsonProcessingException e) {
-            log.error("Error processing user registration event", e);
+            log.error("Failed to sync user to Kafka", e);
             e.printStackTrace();
 
         }
