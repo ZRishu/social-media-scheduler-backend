@@ -19,6 +19,9 @@ import org.springframework.http.*;
 import org.springframework.http.client.ClientHttpResponse;
 
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -54,6 +57,12 @@ public class LinkedInConnectClient {
 
         this.restTemplate = new RestTemplate(factory); // Initialize RestTemplate
 
+        this.restTemplate.setInterceptors(Collections.singletonList((request, body, execution) -> {
+            if (request.getHeaders().getContentLength() > 0) {
+                request.getHeaders().remove("Transfer-Encoding");
+            }
+            return execution.execute(request, body);
+        }));
 
         this.tokenRestClient = RestClient.builder()
                 .baseUrl("https://www.linkedin.com")
@@ -135,19 +144,18 @@ public class LinkedInConnectClient {
         }
     }
 
-    // Add this method to your existing client
     public String publishPost(String authorUrn, String accessToken, PublishRequestDto requestDto) {
         log.info("Publishing to LinkedIn for author: {}", authorUrn);
 
         String author = "urn:li:person:" + authorUrn;
         String url = "https://api.linkedin.com/v2/ugcPosts";
 
-        // 1. Construct the Map Payload
         String imageAssetUrn = null;
         if(requestDto.getMediaUrls() != null && !requestDto.getMediaUrls().isEmpty()){
             String internalUrl = requestDto.getMediaUrls().get(0);
             imageAssetUrn = uploadImageToLinkedIn(author , accessToken , internalUrl);
         }
+
         Map<String, Object> bodyMap = new HashMap<>();
         bodyMap.put("author", author);
         bodyMap.put("lifecycleState", "PUBLISHED");
@@ -166,14 +174,7 @@ public class LinkedInConnectClient {
             media.put("media" , imageAssetUrn);
             shareContent.put("media", Collections.singletonList(media));
         }
-        else if(requestDto.getMediaUrls() != null && !requestDto.getMediaUrls().isEmpty()){
-            log.info("Native upload unavailable. Falling back to Article/Link share.");
-            shareContent.put("shareMediaCategory", "ARTICLE");
-            Map<String, Object> media = new HashMap<>();
-            media.put("status","READY");
-            media.put("originalUrl",requestDto.getMediaUrls().get(0));
-            shareContent.put("media", Collections.singletonList(media));
-        }
+
         else {
             shareContent.put("shareMediaCategory","NONE");
         }
@@ -216,7 +217,26 @@ public class LinkedInConnectClient {
         log.info("starting Native Image Upload for Internal URL: {}" , mediaServiceUrl);
 
         try{
-            byte[] imageBytes = restTemplate.getForObject(mediaServiceUrl , byte[].class);
+            String keycloakToken = "";
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if(authentication != null && authentication.getPrincipal() instanceof Jwt jwt){
+                keycloakToken = jwt.getTokenValue();
+            }
+
+            HttpHeaders internalHeaders = new HttpHeaders();
+            if(!keycloakToken.isEmpty()){
+                internalHeaders.set("Authorization","Bearer " + keycloakToken);
+            }
+            HttpEntity<Void> responseEntity = new HttpEntity<>(internalHeaders);
+
+            ResponseEntity<byte[]> mediaResponse = restTemplate.exchange(
+                    mediaServiceUrl,
+                    HttpMethod.GET,
+                    responseEntity,
+                    byte[].class
+            );
+
+            byte[] imageBytes = mediaResponse.getBody();
             if(imageBytes == null || imageBytes.length == 0) {
                 throw new RuntimeException("Empty image response from Media Service");
             }
@@ -263,7 +283,7 @@ public class LinkedInConnectClient {
 
         }
         catch (Exception e) {
-            log.error("Failed to upload image to Linkedin. Continouing as Text-Only." , e);
+            log.error("Failed to upload image to Linkedin. Continouing as Text-Only. Reason: {}" , e.getMessage());
             return null;
         }
 
