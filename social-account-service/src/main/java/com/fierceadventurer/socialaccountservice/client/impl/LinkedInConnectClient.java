@@ -1,5 +1,8 @@
 package com.fierceadventurer.socialaccountservice.client.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fierceadventurer.socialaccountservice.dto.LinkedInErrorResponse;
 import com.fierceadventurer.socialaccountservice.dto.LinkedInTokenResponse;
@@ -28,12 +31,9 @@ import java.util.*;
 
 @Slf4j
 @Component
-
 public class LinkedInConnectClient {
 
-
     private final String clientId;
-
     private final String clientSecret;
 
     private final RestClient apiRestClient;
@@ -53,8 +53,6 @@ public class LinkedInConnectClient {
         factory.setConnectTimeout(15000);
 
         this.restTemplate = new RestTemplate(factory); // Initialize RestTemplate
-
-
 
 
         this.tokenRestClient = RestClient.builder()
@@ -145,6 +143,11 @@ public class LinkedInConnectClient {
         String url = "https://api.linkedin.com/v2/ugcPosts";
 
         // 1. Construct the Map Payload
+        String imageAssetUrn = null;
+        if(requestDto.getMediaUrls() != null && !requestDto.getMediaUrls().isEmpty()){
+            String internalUrl = requestDto.getMediaUrls().get(0);
+            imageAssetUrn = uploadImageToLinkedIn(author , accessToken , internalUrl);
+        }
         Map<String, Object> bodyMap = new HashMap<>();
         bodyMap.put("author", author);
         bodyMap.put("lifecycleState", "PUBLISHED");
@@ -156,7 +159,15 @@ public class LinkedInConnectClient {
         shareCommentary.put("text", requestDto.getContent());
         shareContent.put("shareCommentary", shareCommentary);
 
-        if(requestDto.getMediaUrls() != null && !requestDto.getMediaUrls().isEmpty()){
+        if(imageAssetUrn != null){
+            shareContent.put("shareMediaCategory", "IMAGE");
+            Map<String, Object> media = new HashMap<>();
+            media.put("status","READY");
+            media.put("media" , imageAssetUrn);
+            shareContent.put("media", Collections.singletonList(media));
+        }
+        else if(requestDto.getMediaUrls() != null && !requestDto.getMediaUrls().isEmpty()){
+            log.info("Native upload unavailable. Falling back to Article/Link share.");
             shareContent.put("shareMediaCategory", "ARTICLE");
             Map<String, Object> media = new HashMap<>();
             media.put("status","READY");
@@ -164,7 +175,7 @@ public class LinkedInConnectClient {
             shareContent.put("media", Collections.singletonList(media));
         }
         else {
-            shareContent.put("shareMediaCategory", "NONE");
+            shareContent.put("shareMediaCategory","NONE");
         }
 
         specificContent.put("com.linkedin.ugc.ShareContent", shareContent);
@@ -175,20 +186,15 @@ public class LinkedInConnectClient {
         bodyMap.put("visibility", visibility);
 
         try {
-            // 2. Manually Serialize to JSON String
-            // This gives us a simple String object. RestTemplate knows exactly how long a String is.
-            // This prevents it from trying to "chunk" the data.
+
             String jsonBody = objectMapper.writeValueAsString(bodyMap);
 
-            // 3. Prepare Headers
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.set("Authorization", "Bearer " + accessToken);
             headers.set("X-Restli-Protocol-Version", "2.0.0");
 
-            // 4. Send 'jsonBody' (String) instead of 'bodyMap' (Object)
             HttpEntity<String> entity = new HttpEntity<>(jsonBody, headers);
-
             ResponseEntity<String> response = restTemplate.exchange(
                     url,
                     HttpMethod.POST,
@@ -201,9 +207,67 @@ public class LinkedInConnectClient {
 
         } catch (Exception e) {
             log.error("Failed to publish to LinkedIn: {}", e.getMessage());
-            e.printStackTrace();
+//            e.printStackTrace();
             throw new LinkedInServiceException("LinkedIn Publish Failed: " + e.getMessage());
         }
     }
+
+    private String uploadImageToLinkedIn(String author, String accessToken, String mediaServiceUrl) {
+        log.info("starting Native Image Upload for Internal URL: {}" , mediaServiceUrl);
+
+        try{
+            byte[] imageBytes = restTemplate.getForObject(mediaServiceUrl , byte[].class);
+            if(imageBytes == null || imageBytes.length == 0) {
+                throw new RuntimeException("Empty image response from Media Service");
+            }
+
+            String registerUrl = "https://api.linkedin.com/v2/assets?action=registerUpload";
+
+            Map<String, Object> regBody = new HashMap<>();
+            Map<String , Object> registerUploadRequest = new HashMap<>();
+            registerUploadRequest.put("recipes", Collections.singletonList("urn:li:digitalmediaRecipe:feedshare-image"));
+            registerUploadRequest.put("owner" , author);
+            registerUploadRequest.put("serviceRelationships", Collections.singletonList(Map.of(
+                    "relationshipType", "OWNER",
+                    "identifier", "urn:li:userGeneratedContent")));
+
+            regBody.put("registerUploadRequest", registerUploadRequest);
+            HttpHeaders authHeader = new HttpHeaders();
+            authHeader.setContentType(MediaType.APPLICATION_JSON);
+            authHeader.set("Authorization", "Bearer " + accessToken);
+
+            String regJson = objectMapper.writeValueAsString(regBody);
+            HttpEntity<String> regEntity = new HttpEntity<>(regJson , authHeader);
+
+            ResponseEntity<String> regResponse = restTemplate.exchange(
+                    registerUrl , HttpMethod.POST , regEntity , String.class);
+
+            JsonNode regNode = objectMapper.readTree(regResponse.getBody());
+            String uploadUrl = regNode.path("value")
+                    .path("uploadMechanism")
+                    .path("com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest")
+                    .path("uploadUrl").asText();
+            String assetUrn = regNode.path("value").path("asset").asText();
+
+            log.info("Image Registered. Asset URN: {}", assetUrn);
+
+            HttpHeaders uploadHeaders = new HttpHeaders();
+            uploadHeaders.set("Authorization","Bearer " + accessToken);
+            uploadHeaders.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+
+            HttpEntity<byte[]> uploadEntity = new HttpEntity<>(imageBytes , uploadHeaders);
+            restTemplate.put(uploadUrl , uploadEntity);
+
+            log.info("Binary Upload Completed Successfully");
+            return assetUrn;
+
+        }
+        catch (Exception e) {
+            log.error("Failed to upload image to Linkedin. Continouing as Text-Only." , e);
+            return null;
+        }
+
+    }
+
 
 }
