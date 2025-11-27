@@ -156,6 +156,10 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://${NEON_DB_HOST}/media_service_db?sslmode=require
       - SPRING_DATASOURCE_USERNAME=${NEON_DB_USER}
       - SPRING_DATASOURCE_PASSWORD=${NEON_DB_PASSWORD}
+      - MINIO_URL=${MINIO_URL}
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+      - BUCKET=${BUCKET}
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://localhost:8088/realms/user-service
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/user-service/protocol/openid-connect/certs
     networks: [ social_media_net ]
@@ -175,6 +179,7 @@ services:
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/user-service/protocol/openid-connect/certs
     networks: [ social_media_net ]
 
+
 volumes:
   post-data:
   scheduler-data:
@@ -183,6 +188,7 @@ volumes:
   user-data:
   media-data:
   keycloak_db_data:
+  minio_data:
 
 networks:
   social_media_net:
