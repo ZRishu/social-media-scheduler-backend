@@ -5,5 +5,9 @@ public enum PostType {
     VIDEO,
     PDF,
     GIF,
-    TEXT
+    TEXT,
+    PPT,
+    PPTX,
+    DOC,
+    DOCX
 }
