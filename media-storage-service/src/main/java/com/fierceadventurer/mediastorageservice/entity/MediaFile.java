@@ -4,9 +4,11 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -29,8 +31,11 @@ public class MediaFile {
     @Column(nullable = false)
     private Long size;
 
-    @Lob
-    @Column(name = "data")
-    @JdbcTypeCode(SqlTypes.BINARY)
-    private byte[] data;
+    private String storagePath;
+
+    @Column(name = "user_id")
+    private UUID userId;
+
+    @CreationTimestamp
+    private LocalDateTime uploadedAt;
 }

@@ -6,8 +6,9 @@ import java.util.UUID;
 
 @Data
 public class KeycloakUserCreatedEvent {
-    private UUID userId;
+    private String userId;
     private String email;
+    private String username;
     private String firstName;
     private String lastName;
 }

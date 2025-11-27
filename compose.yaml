@@ -1,7 +1,8 @@
 services:
   # --- Authentication ---
   keycloak:
-    image: quay.io/keycloak/keycloak:latest
+    build:
+      context: ./keycloak-event-listener
     container_name: keycloak
     command: start-dev
     environment:
@@ -13,6 +14,10 @@ services:
       - KC_DB_PASSWORD=${NEON_DB_PASSWORD}
       - KC_HOSTNAME_URL=http://localhost:8088
       - KC_HOSTNAME_ADMIN_URL=http://localhost:8088
+      - KAFKA_URL=${KAFKA_URL}
+      - KAFKA_KEY=${KAFKA_KEY}
+      - KAFKA_SECRET=${KAFKA_SECRET}
+
     ports:
       - "8088:8080"
     networks:
@@ -29,7 +34,7 @@ services:
     networks: [ social_media_net ]
     depends_on:
       keycloak:
-        condition: service_started # FIX: Changed from service_healthy
+        condition: service_started
     environment:
       - SERVER_PORT=9000
       - spring.cloud.gateway.routes[0].id=user-service
@@ -151,9 +156,12 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://${NEON_DB_HOST}/media_service_db?sslmode=require
       - SPRING_DATASOURCE_USERNAME=${NEON_DB_USER}
       - SPRING_DATASOURCE_PASSWORD=${NEON_DB_PASSWORD}
+      - MINIO_URL=${MINIO_URL}
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+      - BUCKET=${BUCKET}
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://localhost:8088/realms/user-service
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/user-service/protocol/openid-connect/certs
-
     networks: [ social_media_net ]
 
   ai-service:
@@ -169,8 +177,8 @@ services:
       - CLIENTS_MEDIA_SERVICE_URL=http://media-service:8080
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://localhost:8088/realms/user-service
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/user-service/protocol/openid-connect/certs
-
     networks: [ social_media_net ]
+
 
 volumes:
   post-data:
@@ -180,6 +188,7 @@ volumes:
   user-data:
   media-data:
   keycloak_db_data:
+  minio_data:
 
 networks:
   social_media_net:
