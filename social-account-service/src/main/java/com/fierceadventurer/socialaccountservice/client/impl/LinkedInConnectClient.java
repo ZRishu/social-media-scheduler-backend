@@ -168,13 +168,11 @@ public class LinkedInConnectClient {
             media.put("media" , uploadInfo.getAssetUrn());
             shareContent.put("media", Collections.singletonList(media));
         }
-        else if(requestDto.getMediaUrls() != null && !requestDto.getMediaUrls().isEmpty()){
-            log.info("Native upload unavailable. Falling back to Article/Link share.");
-            shareContent.put("shareMediaCategory" , "ARTICLE");
-            Map<String , Object> media = new HashMap<>();
-            media.put("status", "READY");
-            media.put("originalUrl", requestDto.getMediaUrls().get(0));
-            shareContent.put("media", Collections.singletonList(media));
+        else if (requestDto.getMediaUrls() != null && !requestDto.getMediaUrls().isEmpty()) {
+
+            String errorMsg = "Native Media Upload Failed (Asset URN is null). Cannot publish post with broken media link.";
+            log.error(errorMsg);
+            throw new LinkedInServiceException(errorMsg);
         }
         else {
             shareContent.put("shareMediaCategory","NONE");
@@ -239,22 +237,35 @@ public class LinkedInConnectClient {
             }
 
             MediaType contentType  = mediaResponse.getHeaders().getContentType();
+            if (contentType == null) {
+                log.warn("No Content-Type header from Media Service. Aborting upload.");
+                return null;
+            }
+
             log.info("Detected Content-Type: {}", contentType);
 
             String recipe;
             String category;
+            String relationshipIdentifier;
+            String typeStr = contentType.toString().toLowerCase();
 
-            if(contentType.includes(MediaType.IMAGE_JPEG) || contentType.includes(MediaType.IMAGE_PNG) || contentType.includes(MediaType.IMAGE_GIF)){
+            if(typeStr.contains("image")){
                 recipe = "urn:li:digitalmediaRecipe:feedshare-image";
                 category = "IMAGE";
+                relationshipIdentifier = "urn:li:userGeneratedContent";
             }
-            else if(contentType.toString().startsWith("video")){
+            else if(typeStr.contains("video")){
                 recipe = "urn:li:digitalmediaRecipe:feedshare-video";
                 category = "VIDEO";
+                relationshipIdentifier = "urn:li:userGeneratedContent";
             }
-            else if(contentType.equals(MediaType.APPLICATION_PDF)){
+            else if(typeStr.contains("pdf") ||
+                     typeStr.contains("msword") ||
+                     typeStr.contains("officedocument") ||
+                     typeStr.contains("powerpoint")){
                 recipe = "urn:li:digitalmediaRecipe:feedshare-document";
-                category = "DOCUMENT";
+                category = "NATIVE_DOCUMENT";
+                relationshipIdentifier = author;
             }
             else {
                 log.warn("Unsupported media type for native upload: {}",contentType);
@@ -262,14 +273,13 @@ public class LinkedInConnectClient {
             }
 
             String registerUrl = "https://api.linkedin.com/v2/assets?action=registerUpload";
-
             Map<String, Object> regBody = new HashMap<>();
             Map<String , Object> registerUploadRequest = new HashMap<>();
             registerUploadRequest.put("recipes", Collections.singletonList(recipe));
             registerUploadRequest.put("owner" , author);
             registerUploadRequest.put("serviceRelationships", Collections.singletonList(Map.of(
                     "relationshipType", "OWNER",
-                    "identifier", "urn:li:userGeneratedContent")));
+                    "identifier", relationshipIdentifier)));
             regBody.put("registerUploadRequest", registerUploadRequest);
 
             HttpHeaders authHeader = new HttpHeaders();
@@ -289,7 +299,7 @@ public class LinkedInConnectClient {
                     .path("uploadUrl").asText();
             String assetUrn = regNode.path("value").path("asset").asText();
 
-            log.info("Image Registered. Asset URN: {}", assetUrn);
+            log.info("Registered. Asset URN: {}", assetUrn);
 
             HttpHeaders uploadHeaders = new HttpHeaders();
             uploadHeaders.set("Authorization","Bearer " + accessToken);
