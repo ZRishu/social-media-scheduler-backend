@@ -326,5 +326,22 @@ public class LinkedInConnectClient {
 
     }
 
+    public LinkedInOrgResponse fetchUserCompanies(String accessToken){
+        log.info("Fetching LinkedIn Organizations for user");
+        try{
+            String url = "https://api.linkedin.com/v2/organizationalEntityAcls?q=roleAssignee&role=ADMINISTRATOR&state=APPROVED&projection=(elements*(organizationalTarget~(id,localizedName)))";
+
+            return apiRestClient.get()
+                    .uri(url)
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                    .retrieve()
+                    .body(LinkedInOrgResponse.class);
+        }
+        catch (Exception e){
+            log.warn("Failed to fetch organizations (User might not have any): {}", e.getMessage());
+            return null;
+        }
+    }
+
 
 }
