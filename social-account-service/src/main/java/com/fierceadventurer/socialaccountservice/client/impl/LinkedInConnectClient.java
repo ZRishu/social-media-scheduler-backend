@@ -246,18 +246,15 @@ public class LinkedInConnectClient {
 
             String recipe;
             String category;
-            String relationshipIdentifier;
             String typeStr = contentType.toString().toLowerCase();
 
             if(typeStr.contains("image")){
                 recipe = "urn:li:digitalmediaRecipe:feedshare-image";
                 category = "IMAGE";
-                relationshipIdentifier = "urn:li:userGeneratedContent";
             }
             else if(typeStr.contains("video")){
                 recipe = "urn:li:digitalmediaRecipe:feedshare-video";
                 category = "VIDEO";
-                relationshipIdentifier = "urn:li:userGeneratedContent";
             }
             else if(typeStr.contains("pdf") ||
                      typeStr.contains("msword") ||
@@ -265,7 +262,6 @@ public class LinkedInConnectClient {
                      typeStr.contains("powerpoint")){
                 recipe = "urn:li:digitalmediaRecipe:feedshare-document";
                 category = "NATIVE_DOCUMENT";
-                relationshipIdentifier = author;
             }
             else {
                 log.warn("Unsupported media type for native upload: {}",contentType);
@@ -277,9 +273,15 @@ public class LinkedInConnectClient {
             Map<String , Object> registerUploadRequest = new HashMap<>();
             registerUploadRequest.put("recipes", Collections.singletonList(recipe));
             registerUploadRequest.put("owner" , author);
-            registerUploadRequest.put("serviceRelationships", Collections.singletonList(Map.of(
-                    "relationshipType", "OWNER",
-                    "identifier", relationshipIdentifier)));
+            if(!category.equals("NATIVE_DOCUMENT")){
+                registerUploadRequest.put("serviceRelationships", Collections.singletonList(Map.of(
+                        "relationshipType", "OWNER",
+                        "identifier","urn:li:userGeneratedContent" )));
+            }
+            else {
+                registerUploadRequest.put("serviceRelationships",Collections.EMPTY_LIST);
+            }
+
             regBody.put("registerUploadRequest", registerUploadRequest);
 
             HttpHeaders authHeader = new HttpHeaders();
