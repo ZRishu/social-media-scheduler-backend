@@ -9,11 +9,13 @@ import com.fierceadventurer.socialaccountservice.entities.AuthToken;
 import com.fierceadventurer.socialaccountservice.entities.RateLimitQuota;
 import com.fierceadventurer.socialaccountservice.entities.SocialAccount;
 import com.fierceadventurer.socialaccountservice.enums.AccountStatus;
+import com.fierceadventurer.socialaccountservice.enums.AccountType;
 import com.fierceadventurer.socialaccountservice.enums.Provider;
 import com.fierceadventurer.socialaccountservice.exception.ResourceNotFoundException;
 import com.fierceadventurer.socialaccountservice.exception.TokenRefreshException;
 import com.fierceadventurer.socialaccountservice.mapper.SocialAccountMapper;
 import com.fierceadventurer.socialaccountservice.repository.AuthTokenRepository;
+import com.fierceadventurer.socialaccountservice.repository.RateLimitQuotaRepository;
 import com.fierceadventurer.socialaccountservice.repository.SocialAccountRepository;
 import com.fierceadventurer.socialaccountservice.service.SocialAccountService;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Comparator;
+import java.util.Locale;
 import java.util.UUID;
 
 @Service
@@ -39,66 +42,118 @@ public class SocialAccountServiceImpl implements SocialAccountService {
     private final KafkaTemplate<String, AccountCreatedEvent> kafkaTemplate;
     private final TokenRefreshClientFactory tokenRefreshFactory;
     private final LinkedInConnectClient linkedInConnectClient;
+    private final RateLimitQuotaRepository rateLimitQuotaRepository;
+
 
     @Override
     @Transactional
     public SocialAccountResponseDto createSocialAccount(UUID userId , CreateSocialAccountRequestDto requestDto) {
         log.info("Creating social account for user {}", userId);
-        SocialAccount socialAccount = new SocialAccount();
-        socialAccount.setUserId(userId);
-        socialAccount.setProvider(Provider.valueOf(requestDto.getProvider().toUpperCase()));
-        socialAccount.setStatus(AccountStatus.ACTIVE);
-        socialAccount.setAccountType(requestDto.getAccountType());
 
-        if(socialAccount.getProvider() == Provider.LINKEDIN && requestDto.getAuthCode() != null) {
-            log.info("Starting LinkedIn OAuth flow for user {}", userId);
-
-            LinkedInTokenResponse tokens = linkedInConnectClient.exchangeAuthCode(
-                    requestDto.getAuthCode(),
-                    requestDto.getRedirectUri()
-            );
-
-            LinkedInUserInfo userInfo = linkedInConnectClient.fetchUserProfile(tokens.getAccessToken());
-
-            socialAccount.setExternalId(userInfo.getExternalId());
-            socialAccount.setUsername(userInfo.getEmail());
-            socialAccount.setDisplayName(userInfo.getFullName());
-            socialAccount.setProfileImageUrl(userInfo.getPictureUrl());
-
-            AuthToken authToken = new AuthToken();
-            authToken.setSocialAccount(socialAccount);
-            authToken.setAccessToken(tokens.getAccessToken());
-            authToken.setRefreshToken(tokens.getRefreshToken());
-            authToken.setExpiry(LocalDateTime.now().plusSeconds(tokens.getExpiresIn()));
-
-            socialAccount.getAuthTokens().add(authToken);
-
-        }
-        else{
-            throw new UnsupportedOperationException("Provider not yet supported: " + socialAccount.getProvider());
+        if(Provider.valueOf(requestDto.getProvider().toUpperCase()) != Provider.LINKEDIN){
+            throw new UnsupportedOperationException("Provider not yet supported: " + requestDto.getProvider());
         }
 
+        LinkedInTokenResponse tokens = linkedInConnectClient.exchangeAuthCode(
+                requestDto.getAuthCode(),
+                requestDto.getRedirectUri()
+        );
+        LinkedInUserInfo userInfo = linkedInConnectClient.fetchUserProfile(tokens.getAccessToken());
 
-        RateLimitQuota quota = new RateLimitQuota();
-        quota.setSocialAccount(socialAccount);
 
-        String providerKey = socialAccount.getProvider().name().toLowerCase();
-        RateLimitProperties.ProviderConfig config = rateLimitProperties
-                .getProviders().getOrDefault(providerKey , rateLimitProperties.getProviders().get("default"));
-        quota.setRequestLimit(config.getLimit());
-        quota.setWindowStart(LocalDateTime.now().plusMinutes(config.getWindowMinutes()));
-
-        socialAccount.setRateLimitQuota(quota);
-
-        SocialAccount savedAccount = socialAccountRepository.save(socialAccount);
-
-        AccountCreatedEvent event = new AccountCreatedEvent(
-                savedAccount.getAccountId(),
-                savedAccount.getProvider().name()
+        String personUrn = "urn:li:person:" + userInfo.getExternalId();
+        SocialAccount personAccount = saveOrUpdateAccount(
+                userId,
+                personUrn,
+                userInfo.getFullName(),
+                "PERSONAL",
+                userInfo.getPictureUrl(),
+                tokens
         );
 
-        kafkaTemplate.send("social-account-created-topic", event);
-        return socialAccountMapper.toDto(savedAccount);
+        try {
+            LinkedInOrgResponse orgs = linkedInConnectClient.fetchUserCompanies(tokens.getAccessToken());
+
+            if(orgs != null && orgs.getElements() != null){
+                for(LinkedInOrgResponse.Element element : orgs.getElements()){
+                    if(element.getOrganizationDetails() != null){
+                        String orgName = element.getOrganizationDetails().getLocalizedName();
+                        String orgId = element.getOrganizationDetails().getId();
+                        String fullUrn = "urn:li:organization:" + orgId;
+
+                        log.info("Found Organization: {} ({})", orgName , fullUrn);
+
+                        saveOrUpdateAccount(
+                                userId,
+                                fullUrn,
+                                orgName,
+                                "BUSINESS",
+                                null,
+                                tokens
+                        );
+                    }
+                }
+            }
+        }
+        catch (Exception e){
+            log.error("Error fetching/saving organizations. Proceeding with personal account only." , e);
+        }
+
+        return socialAccountMapper.toDto(personAccount);
+
+    }
+
+    private SocialAccount saveOrUpdateAccount(
+            UUID userId , String externalId , String displayName ,
+            String accountType , String profileImage , LinkedInTokenResponse tokens){
+
+        SocialAccount account = socialAccountRepository.findByExternalId(externalId).orElse(new SocialAccount());
+
+        boolean isNew = account.getAccountId() == null;
+
+        account.setUserId(userId);
+        account.setProvider(Provider.LINKEDIN);
+        account.setAccountType(AccountType.valueOf(accountType));
+        account.setExternalId(externalId);
+        account.setDisplayName(displayName);
+        account.setProfileImageUrl(profileImage);
+        account.setStatus(AccountStatus.CONNECTED);
+
+        SocialAccount savedAccount = socialAccountRepository.save(account);
+        if(!isNew){
+            authTokenRepository.deleteAll(savedAccount.getAuthTokens());
+            savedAccount.getAuthTokens().clear();
+        }
+        AuthToken authToken = new AuthToken();
+        authToken.setSocialAccount(savedAccount);
+        authToken.setAccessToken(tokens.getAccessToken());
+        authToken.setRefreshToken(tokens.getRefreshToken());
+        authToken.setExpiry(LocalDateTime.now().plusSeconds(tokens.getExpiresIn()));
+        authTokenRepository.save(authToken);
+
+        if(isNew){
+            RateLimitQuota quota = new RateLimitQuota();
+            quota.setSocialAccount(savedAccount);
+
+            RateLimitProperties.ProviderConfig config = rateLimitProperties
+                    .getProviders().getOrDefault("linkedin" , rateLimitProperties.getProviders().get("default"));
+
+            quota.setRequestLimit(config.getLimit());
+            quota.setUsedRequests(0);
+            quota.setWindowStart(LocalDateTime.now());
+            rateLimitQuotaRepository.save(quota);
+
+            AccountCreatedEvent event = new AccountCreatedEvent(
+                    savedAccount.getAccountId(),
+                    savedAccount.getProvider().name()
+            );
+            kafkaTemplate.send("social-account-created-topic", event);
+
+
+        }
+        return savedAccount;
+
+
     }
 
     @Override
