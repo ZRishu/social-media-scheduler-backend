@@ -141,7 +141,10 @@ public class LinkedInConnectClient {
     public String publishPost(String authorUrn, String accessToken, PublishRequestDto requestDto) {
         log.info("Publishing to LinkedIn for author: {}", authorUrn);
 
-        String author = "urn:li:person:" + authorUrn;
+        String author = authorUrn;
+        if (!authorUrn.startsWith("urn:li:")) {
+            author = "urn:li:person:" + authorUrn;
+        }
         String url = "https://api.linkedin.com/v2/ugcPosts";
 
         UploadedMediaInfo uploadInfo = null;
@@ -169,8 +172,7 @@ public class LinkedInConnectClient {
             shareContent.put("media", Collections.singletonList(media));
         }
         else if (requestDto.getMediaUrls() != null && !requestDto.getMediaUrls().isEmpty()) {
-
-            String errorMsg = "Native Media Upload Failed (Asset URN is null). Cannot publish post with broken media link.";
+            String errorMsg = "Native Media Upload Failed. Possible reasons: PDF on Personal Profile (Not Supported), or Network Error.";
             log.error(errorMsg);
             throw new LinkedInServiceException(errorMsg);
         }
@@ -247,6 +249,7 @@ public class LinkedInConnectClient {
             String recipe;
             String category;
             String typeStr = contentType.toString().toLowerCase();
+            String relationshipIdentifier = "urn:li:userGeneratedContent";
 
             if(typeStr.contains("image")){
                 recipe = "urn:li:digitalmediaRecipe:feedshare-image";
@@ -260,8 +263,14 @@ public class LinkedInConnectClient {
                      typeStr.contains("msword") ||
                      typeStr.contains("officedocument") ||
                      typeStr.contains("powerpoint")){
-                recipe = "urn:li:digitalmediaRecipe:feedshare-document";
-                category = "NATIVE_DOCUMENT";
+                if (author.contains("organization")) {
+                    recipe = "urn:li:digitalmediaRecipe:feedshare-document";
+                    category = "NATIVE_DOCUMENT";
+                    relationshipIdentifier = author;
+                } else {
+                    log.error("ABORTING: Native PDF/Document upload is NOT supported for Personal Profiles ({}).", author);
+                    return null;
+                }
             }
             else {
                 log.warn("Unsupported media type for native upload: {}",contentType);
@@ -273,22 +282,18 @@ public class LinkedInConnectClient {
             Map<String , Object> registerUploadRequest = new HashMap<>();
             registerUploadRequest.put("recipes", Collections.singletonList(recipe));
             registerUploadRequest.put("owner" , author);
-            if(!category.equals("NATIVE_DOCUMENT")){
-                registerUploadRequest.put("serviceRelationships", Collections.singletonList(Map.of(
-                        "relationshipType", "OWNER",
-                        "identifier","urn:li:userGeneratedContent" )));
-            }
-            else {
-                registerUploadRequest.put("serviceRelationships",Collections.EMPTY_LIST);
-            }
+            registerUploadRequest.put("serviceRelationships", Collections.singletonList(Map.of(
+                    "relationshipType", "OWNER",
+                    "identifier", relationshipIdentifier)));
+
 
             regBody.put("registerUploadRequest", registerUploadRequest);
-
+            String regJson = objectMapper.writeValueAsString(regBody);
+            log.info("Register Upload Payload: {}", regJson);
             HttpHeaders authHeader = new HttpHeaders();
             authHeader.setContentType(MediaType.APPLICATION_JSON);
             authHeader.set("Authorization", "Bearer " + accessToken);
 
-            String regJson = objectMapper.writeValueAsString(regBody);
             HttpEntity<String> regEntity = new HttpEntity<>(regJson , authHeader);
 
             ResponseEntity<String> regResponse = restTemplate.exchange(
