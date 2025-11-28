@@ -66,6 +66,7 @@ public class SocialAccountServiceImpl implements SocialAccountService {
                 userId,
                 personUrn,
                 userInfo.getFullName(),
+                userInfo.getEmail(),
                 "PERSONAL",
                 userInfo.getPictureUrl(),
                 tokens
@@ -82,11 +83,13 @@ public class SocialAccountServiceImpl implements SocialAccountService {
                         String fullUrn = "urn:li:organization:" + orgId;
 
                         log.info("Found Organization: {} ({})", orgName , fullUrn);
+                        String orgUsername = "org_" + orgId + "@linkedin.business";
 
                         saveOrUpdateAccount(
                                 userId,
                                 fullUrn,
                                 orgName,
+                                orgUsername,
                                 "BUSINESS",
                                 null,
                                 tokens
@@ -104,7 +107,7 @@ public class SocialAccountServiceImpl implements SocialAccountService {
     }
 
     private SocialAccount saveOrUpdateAccount(
-            UUID userId , String externalId , String displayName ,
+            UUID userId , String externalId , String displayName ,String username,
             String accountType , String profileImage , LinkedInTokenResponse tokens){
 
         SocialAccount account = socialAccountRepository.findByExternalId(externalId).orElse(new SocialAccount());
@@ -116,6 +119,7 @@ public class SocialAccountServiceImpl implements SocialAccountService {
         account.setAccountType(AccountType.valueOf(accountType));
         account.setExternalId(externalId);
         account.setDisplayName(displayName);
+        account.setUsername(username != null ? username : externalId);
         account.setProfileImageUrl(profileImage);
         account.setStatus(AccountStatus.CONNECTED);
 
@@ -264,7 +268,9 @@ public class SocialAccountServiceImpl implements SocialAccountService {
     public String publishContent(UUID accountId, PublishRequestDto requestDto) {
         // 1. Get valid token
         String accessToken = getActiveAccessToken(accountId);
-        SocialAccount account = socialAccountRepository.findById(accountId).orElseThrow();
+        SocialAccount account = socialAccountRepository.findById(accountId).orElseThrow(
+                ()-> new ResourceNotFoundException("Account not found")
+        );
 
         // 2. Call LinkedIn Client
         return linkedInConnectClient.publishPost(account.getExternalId(), accessToken, requestDto);
