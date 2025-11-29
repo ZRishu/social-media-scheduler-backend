@@ -4,6 +4,8 @@ import com.fierceadventurer.socialaccountservice.dto.CreateSocialAccountRequestD
 import com.fierceadventurer.socialaccountservice.dto.PublishRequestDto;
 import com.fierceadventurer.socialaccountservice.dto.SocialAccountResponseDto;
 import com.fierceadventurer.socialaccountservice.entities.SocialAccount;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.UUID;
 
@@ -15,6 +17,7 @@ public interface SocialAccountService {
     void markedAccountTokenExpired(UUID accountId);
     String getActiveAccessToken(UUID accountId);
     void validateAccountOwnership(UUID accountId, UUID userId);
+    Page<SocialAccountResponseDto> getAccountsByUserId(UUID userId, Pageable pageable);
 
     String publishContent(UUID accountId, PublishRequestDto requestDto);
 

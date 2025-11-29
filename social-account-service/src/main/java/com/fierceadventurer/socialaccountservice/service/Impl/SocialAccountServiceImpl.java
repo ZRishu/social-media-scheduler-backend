@@ -20,6 +20,8 @@ import com.fierceadventurer.socialaccountservice.repository.SocialAccountReposit
 import com.fierceadventurer.socialaccountservice.service.SocialAccountService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -274,5 +276,11 @@ public class SocialAccountServiceImpl implements SocialAccountService {
 
         // 2. Call LinkedIn Client
         return linkedInConnectClient.publishPost(account.getExternalId(), accessToken, requestDto);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<SocialAccountResponseDto> getAccountsByUserId(UUID userId, Pageable pageable) {
+        return socialAccountRepository.findByUserId(userId, pageable)
+                .map(socialAccountMapper::toDto);
     }
 }
