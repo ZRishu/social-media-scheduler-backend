@@ -110,7 +110,7 @@ public class SocialAccountServiceImpl implements SocialAccountService {
 
     private SocialAccount saveOrUpdateAccount(
             UUID userId , String externalId , String displayName ,String username,
-            String accountType , String profileImage , LinkedInTokenResponse tokens){
+            String accountTypeStr , String profileImage , LinkedInTokenResponse tokens){
 
         SocialAccount account = socialAccountRepository.findByExternalId(externalId).orElse(new SocialAccount());
 
@@ -118,7 +118,7 @@ public class SocialAccountServiceImpl implements SocialAccountService {
 
         account.setUserId(userId);
         account.setProvider(Provider.LINKEDIN);
-        account.setAccountType(AccountType.valueOf(accountType));
+        account.setAccountType(AccountType.valueOf(accountTypeStr));
         account.setExternalId(externalId);
         account.setDisplayName(displayName);
         account.setUsername(username != null ? username : externalId);
@@ -249,7 +249,7 @@ public class SocialAccountServiceImpl implements SocialAccountService {
 
         TokenRefreshClient client = tokenRefreshFactory.getClient(account.getProvider());
 
-        OAuthRefreshResponse refreshResponse = client.refreshAccessToken(expiredToken.getAccessToken());
+        OAuthRefreshResponse refreshResponse = client.refreshAccessToken(expiredToken.getRefreshToken());
 
         expiredToken.setAccessToken(refreshResponse.getAccessToken());
 
