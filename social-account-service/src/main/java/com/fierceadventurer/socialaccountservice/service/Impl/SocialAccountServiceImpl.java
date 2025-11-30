@@ -239,7 +239,7 @@ public class SocialAccountServiceImpl implements SocialAccountService {
 
         if(!account.getUserId().equals(userId)){
             log.warn("Access Denied: User {} does not own social account {}", userId, accountId);
-            throw new AccessDeniedException("User does not have permisiion for this social account.");
+            throw new AccessDeniedException("User does not have permission for this social account.");
         }
     }
 
