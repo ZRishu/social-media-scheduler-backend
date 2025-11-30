@@ -11,7 +11,9 @@ public class TokenRefreshClientFactory {
     private final ApplicationContext context;
 
     public TokenRefreshClient getClient(Provider provider) {
-        String beanName = provider.name().toLowerCase() + "TokenClient";
-        return context.getBean(beanName, TokenRefreshClient.class);
+        if(provider == Provider.LINKEDIN){
+            return context.getBean("LINKEDIN_REFRESH_CLIENT", TokenRefreshClient.class);
+        }
+        throw new UnsupportedOperationException("Refresh logic not implemented for: " + provider);
     }
 }
