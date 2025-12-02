@@ -1,9 +1,11 @@
 package com.fierceadventurer.socialaccountservice.entities;
 
+import com.fierceadventurer.socialaccountservice.util.AttributeEncryptor;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -20,14 +22,22 @@ public class AuthToken {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID tokenId;
 
-    @Column(columnDefinition = "TEXT" , nullable = false)
+    @Convert(converter = AttributeEncryptor.class)
+    @Column(columnDefinition = "TEXT" )
     private String accessToken;
 
-    @Column(columnDefinition = "TEXT")
+    @Convert(converter = AttributeEncryptor.class)
+    @Column(columnDefinition = "TEXT" )
     private String refreshToken;
 
     @Column(nullable = false)
     private LocalDateTime expiry;
+
+    @CreationTimestamp
+    private LocalDateTime createdAt;
+
+    @CreationTimestamp
+    private LocalDateTime updatedAt;
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "auth_token_scopes" , joinColumns = @JoinColumn(name = "token_id"))

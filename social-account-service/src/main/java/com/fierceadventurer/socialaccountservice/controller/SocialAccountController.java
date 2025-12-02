@@ -37,7 +37,8 @@ public class SocialAccountController {
 
     @GetMapping
     public ResponseEntity<Page<SocialAccountResponseDto>> getAllSocialAccountsForUser(
-            @RequestParam UUID userId , Pageable pageable){
+            @AuthenticationPrincipal Jwt jwt, Pageable pageable){
+        UUID userId = UUID.fromString(jwt.getSubject());
         Page<SocialAccountResponseDto> accounts = accountQueryService.getAccountsByUserId(userId, pageable);
         return ResponseEntity.ok(accounts);
     }

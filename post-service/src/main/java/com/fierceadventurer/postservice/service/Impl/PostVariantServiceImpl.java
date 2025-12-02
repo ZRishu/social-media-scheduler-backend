@@ -11,7 +11,6 @@ import com.fierceadventurer.postservice.entity.PostVariant;
 import com.fierceadventurer.postservice.enums.Platform;
 import com.fierceadventurer.postservice.enums.PostType;
 import com.fierceadventurer.postservice.events.VariantReadyForSchedulingEvent;
-import com.fierceadventurer.postservice.exception.MediaAssetNotFoundException;
 import com.fierceadventurer.postservice.exception.ResourceNotFoundException;
 import com.fierceadventurer.postservice.mapper.PostVariantMapper;
 import com.fierceadventurer.postservice.repository.MediaAssetRepository;
@@ -28,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -64,9 +64,14 @@ public class PostVariantServiceImpl implements PostVariantService {
 
         if(variant.getScheduledAt() == null) {
             log.info("No schedule time provided for variant. Fetching best time...");
-            LocalDateTime bestTime = analyticsClient.getNextBestTime(createDto.getSocialAccountId())
-                    .getNextBestTime();
-            variant.setScheduledAt(bestTime);
+            try {
+                LocalDateTime bestTime = analyticsClient.getNextBestTime(createDto.getSocialAccountId())
+                        .getNextBestTime();
+                variant.setScheduledAt(bestTime);
+            } catch (Exception e) {
+                log.warn("Analytics Service unavailable. Defaulting to 1 hour from now.");
+                variant.setScheduledAt(LocalDateTime.now().plusHours(1));
+            }
         }
 
         if(createDto.getMediaUrls() != null
@@ -77,10 +82,8 @@ public class PostVariantServiceImpl implements PostVariantService {
                     asset.setPost(post);
                     asset.setUserId(userId);
                     asset.setStorageUrl(url);
-
-
-                    asset.setMediaType(mapPlatformToPostType(variant.getPlatform()));
-                    asset.setSize(0L); // Placeholder.
+                    asset.setMediaType(determineMediaTypeFromUrl(url));
+                    asset.setSize(0L); 
 
                     return mediaAssetRepository.save(asset);
                 }).collect(Collectors.toList());
@@ -102,12 +105,36 @@ public class PostVariantServiceImpl implements PostVariantService {
         return postVariantMapper.toDto(savedVariant);
     }
 
-    private PostType mapPlatformToPostType(@NotNull(message = "Platform cannot be blank") Platform platform) {
-        if (platform == Platform.INSTAGRAM || platform == Platform.THREADS || platform == Platform.LINKEDIN) {
-            return PostType.IMAGE; // Or a more complex logic to check content type
+    private PostType determineMediaTypeFromUrl(String url) {
+        if(url == null) return PostType.TEXT;
+        String lowerUrl = url.toLowerCase(Locale.ROOT);
+        
+        if(lowerUrl.endsWith("pdf")){
+            return PostType.PDF;
         }
-        return PostType.TEXT;
+         else if (lowerUrl.endsWith(".ppt")) {
+            return PostType.PPT;
+        }
+        else if (lowerUrl.endsWith(".pptx")) {
+            return PostType.PPTX;
+        }
+        else if (lowerUrl.endsWith(".doc")) {
+            return PostType.DOC;
+        }
+        else if (lowerUrl.endsWith(".docx")) {
+            return PostType.DOCX;
+        }
+        else if (lowerUrl.endsWith(".mp4") || lowerUrl.endsWith(".mov") || lowerUrl.endsWith(".avi") || lowerUrl.endsWith(".mkv")) {
+            return PostType.VIDEO;
+        }
+        else if (lowerUrl.endsWith(".gif")) {
+            return PostType.GIF;
+        }
+        else {
+            return PostType.IMAGE;
+        }
     }
+
 
     @Override
     @Transactional(readOnly = true)

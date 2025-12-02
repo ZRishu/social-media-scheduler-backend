@@ -18,4 +18,6 @@ public interface SocialAccountRepository extends JpaRepository<SocialAccount, UU
 
     @Query("SELECT sa FROM SocialAccount sa WHERE sa.accountId = :accountId AND sa.status != 'SUSPENDED'")
     Optional<SocialAccount> findActiveAccountById(UUID accountId);
+
+    Optional<SocialAccount> findByExternalId(String externalId);
 }

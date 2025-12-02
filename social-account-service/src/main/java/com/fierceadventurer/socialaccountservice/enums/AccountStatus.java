@@ -3,5 +3,5 @@ package com.fierceadventurer.socialaccountservice.enums;
 public enum AccountStatus {
     ACTIVE ,
     SUSPENDED,
-    TOKEN_EXPIRED
+    CONNECTED, TOKEN_EXPIRED
 }

@@ -1,15 +1,9 @@
 package com.fierceadventurer.socialaccountservice.client.impl;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fierceadventurer.socialaccountservice.dto.LinkedInErrorResponse;
-import com.fierceadventurer.socialaccountservice.dto.LinkedInTokenResponse;
-import com.fierceadventurer.socialaccountservice.dto.LinkedInUserInfo;
-import com.fierceadventurer.socialaccountservice.dto.PublishRequestDto;
+import com.fierceadventurer.socialaccountservice.dto.*;
 import com.fierceadventurer.socialaccountservice.exception.LinkedInServiceException;
-
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hc.client5.http.classic.HttpClient;
@@ -147,13 +141,16 @@ public class LinkedInConnectClient {
     public String publishPost(String authorUrn, String accessToken, PublishRequestDto requestDto) {
         log.info("Publishing to LinkedIn for author: {}", authorUrn);
 
-        String author = "urn:li:person:" + authorUrn;
+        String author = authorUrn;
+        if (!authorUrn.startsWith("urn:li:")) {
+            author = "urn:li:person:" + authorUrn;
+        }
         String url = "https://api.linkedin.com/v2/ugcPosts";
 
-        String imageAssetUrn = null;
+        UploadedMediaInfo uploadInfo = null;
         if(requestDto.getMediaUrls() != null && !requestDto.getMediaUrls().isEmpty()){
             String internalUrl = requestDto.getMediaUrls().get(0);
-            imageAssetUrn = uploadImageToLinkedIn(author , accessToken , internalUrl);
+            uploadInfo = uploadImageToLinkedIn(author , accessToken , internalUrl);
         }
 
         Map<String, Object> bodyMap = new HashMap<>();
@@ -167,24 +164,25 @@ public class LinkedInConnectClient {
         shareCommentary.put("text", requestDto.getContent());
         shareContent.put("shareCommentary", shareCommentary);
 
-        if(imageAssetUrn != null){
-            shareContent.put("shareMediaCategory", "IMAGE");
+        if(uploadInfo != null){
+            shareContent.put("shareMediaCategory", uploadInfo.getCategory());
             Map<String, Object> media = new HashMap<>();
             media.put("status","READY");
-            media.put("media" , imageAssetUrn);
+            media.put("media" , uploadInfo.getAssetUrn());
             shareContent.put("media", Collections.singletonList(media));
         }
-
+        else if (requestDto.getMediaUrls() != null && !requestDto.getMediaUrls().isEmpty()) {
+            String errorMsg = "Native Media Upload Failed. Possible reasons: PDF on Personal Profile (Not Supported), or Network Error.";
+            log.error(errorMsg);
+            throw new LinkedInServiceException(errorMsg);
+        }
         else {
             shareContent.put("shareMediaCategory","NONE");
         }
 
         specificContent.put("com.linkedin.ugc.ShareContent", shareContent);
         bodyMap.put("specificContent", specificContent);
-
-        Map<String, Object> visibility = new HashMap<>();
-        visibility.put("com.linkedin.ugc.MemberNetworkVisibility", "PUBLIC");
-        bodyMap.put("visibility", visibility);
+        bodyMap.put("visibility", Map.of("com.linkedin.ugc.MemberNetworkVisibility", "PUBLIC"));
 
         try {
 
@@ -208,12 +206,11 @@ public class LinkedInConnectClient {
 
         } catch (Exception e) {
             log.error("Failed to publish to LinkedIn: {}", e.getMessage());
-//            e.printStackTrace();
             throw new LinkedInServiceException("LinkedIn Publish Failed: " + e.getMessage());
         }
     }
 
-    private String uploadImageToLinkedIn(String author, String accessToken, String mediaServiceUrl) {
+    private UploadedMediaInfo uploadImageToLinkedIn(String author, String accessToken, String mediaServiceUrl) {
         log.info("starting Native Image Upload for Internal URL: {}" , mediaServiceUrl);
 
         try{
@@ -236,57 +233,114 @@ public class LinkedInConnectClient {
                     byte[].class
             );
 
-            byte[] imageBytes = mediaResponse.getBody();
-            if(imageBytes == null || imageBytes.length == 0) {
+            byte[] mediaBytes = mediaResponse.getBody();
+            if(mediaBytes == null || mediaBytes.length == 0) {
                 throw new RuntimeException("Empty image response from Media Service");
             }
 
-            String registerUrl = "https://api.linkedin.com/v2/assets?action=registerUpload";
+            MediaType contentType  = mediaResponse.getHeaders().getContentType();
+            if (contentType == null) {
+                log.warn("No Content-Type header from Media Service. Aborting upload.");
+                return null;
+            }
 
+            log.info("Detected Content-Type: {}", contentType);
+
+            String recipe;
+            String category;
+            String typeStr = contentType.toString().toLowerCase();
+            String relationshipIdentifier = "urn:li:userGeneratedContent";
+
+            if(typeStr.contains("image")){
+                recipe = "urn:li:digitalmediaRecipe:feedshare-image";
+                category = "IMAGE";
+            }
+            else if(typeStr.contains("video")){
+                recipe = "urn:li:digitalmediaRecipe:feedshare-video";
+                category = "VIDEO";
+            }
+            else if(typeStr.contains("pdf") ||
+                     typeStr.contains("msword") ||
+                     typeStr.contains("officedocument") ||
+                     typeStr.contains("powerpoint")){
+                if (author.contains("organization")) {
+                    recipe = "urn:li:digitalmediaRecipe:feedshare-document";
+                    category = "NATIVE_DOCUMENT";
+                    relationshipIdentifier = author;
+                } else {
+                    log.error("ABORTING: Native PDF/Document upload is NOT supported for Personal Profiles ({}).", author);
+                    return null;
+                }
+            }
+            else {
+                log.warn("Unsupported media type for native upload: {}",contentType);
+                return null;
+            }
+
+            String registerUrl = "https://api.linkedin.com/v2/assets?action=registerUpload";
             Map<String, Object> regBody = new HashMap<>();
             Map<String , Object> registerUploadRequest = new HashMap<>();
-            registerUploadRequest.put("recipes", Collections.singletonList("urn:li:digitalmediaRecipe:feedshare-image"));
+            registerUploadRequest.put("recipes", Collections.singletonList(recipe));
             registerUploadRequest.put("owner" , author);
             registerUploadRequest.put("serviceRelationships", Collections.singletonList(Map.of(
                     "relationshipType", "OWNER",
-                    "identifier", "urn:li:userGeneratedContent")));
+                    "identifier", relationshipIdentifier)));
+
 
             regBody.put("registerUploadRequest", registerUploadRequest);
+            String regJson = objectMapper.writeValueAsString(regBody);
+            log.info("Register Upload Payload: {}", regJson);
             HttpHeaders authHeader = new HttpHeaders();
             authHeader.setContentType(MediaType.APPLICATION_JSON);
             authHeader.set("Authorization", "Bearer " + accessToken);
 
-            String regJson = objectMapper.writeValueAsString(regBody);
             HttpEntity<String> regEntity = new HttpEntity<>(regJson , authHeader);
 
             ResponseEntity<String> regResponse = restTemplate.exchange(
                     registerUrl , HttpMethod.POST , regEntity , String.class);
-
             JsonNode regNode = objectMapper.readTree(regResponse.getBody());
+
             String uploadUrl = regNode.path("value")
                     .path("uploadMechanism")
                     .path("com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest")
                     .path("uploadUrl").asText();
             String assetUrn = regNode.path("value").path("asset").asText();
 
-            log.info("Image Registered. Asset URN: {}", assetUrn);
+            log.info("Registered. Asset URN: {}", assetUrn);
 
             HttpHeaders uploadHeaders = new HttpHeaders();
             uploadHeaders.set("Authorization","Bearer " + accessToken);
             uploadHeaders.setContentType(MediaType.APPLICATION_OCTET_STREAM);
 
-            HttpEntity<byte[]> uploadEntity = new HttpEntity<>(imageBytes , uploadHeaders);
+            HttpEntity<byte[]> uploadEntity = new HttpEntity<>(mediaBytes , uploadHeaders);
             restTemplate.put(uploadUrl , uploadEntity);
 
             log.info("Binary Upload Completed Successfully");
-            return assetUrn;
+            return new UploadedMediaInfo(assetUrn , category);
 
         }
         catch (Exception e) {
-            log.error("Failed to upload image to Linkedin. Continouing as Text-Only. Reason: {}" , e.getMessage());
+            log.error("Failed to upload media to Linkedin. Continuing as Text-Only. Reason: {}" , e.getMessage());
             return null;
         }
 
+    }
+
+    public LinkedInOrgResponse fetchUserCompanies(String accessToken){
+        log.info("Fetching LinkedIn Organizations for user");
+        try{
+            String url = "https://api.linkedin.com/v2/organizationalEntityAcls?q=roleAssignee&role=ADMINISTRATOR&state=APPROVED&projection=(elements*(organizationalTarget~(id,localizedName)))";
+
+            return apiRestClient.get()
+                    .uri(url)
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                    .retrieve()
+                    .body(LinkedInOrgResponse.class);
+        }
+        catch (Exception e){
+            log.warn("Failed to fetch organizations (User might not have any): {}", e.getMessage());
+            return null;
+        }
     }
 
 
