@@ -271,14 +271,14 @@ function App() {
 
             {/* right side */}
             <div className="flex flex-col flex-1 bg-white rounded-lg shadow-lg border border-gray-100">
-              <div className="flex border-b border-gray-200">
+              <div className="border-b border-gray-200">
                 {postGneration.map((item) => (
                   <button
                     key={item.name}
                     onClick={() => setActive(item.name)}
-                    className={`relative px-[2.85rem] text-sm font-medium ${active === item.name
-                        ? 'text-[#34A0A4] font-semibold after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1.8px] after:bg-[#34A0A4]'
-                        : 'flex-1 px-[0.6rem] py-3 text-gray-600 hover:text-[#34A0A4] text-sm font-medium'
+                    className={`relative px-[2.85rem] py-[0.85rem] text-sm font-medium ${active === item.name
+                        ? 'text-[#34A0A4] py-[0.85rem] font-semibold after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1.8px] after:bg-[#34A0A4]'
+                        : 'flex-1  text-gray-600 hover:text-[#34A0A4] text-sm font-medium'
                       }`}
                   >
                     {item.name}

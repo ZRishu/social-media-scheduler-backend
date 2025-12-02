@@ -44,7 +44,7 @@ const Login = () => {
         </div>
 
         <div className="relative w-3/4 text-center text-gray-500 before:content-[''] before:absolute before:top-1/2 before:left-0 before:w-[190px] before:h-px before:bg-gray-200 after:content-[''] after:absolute after:top-1/2 after:right-0 after:w-2/6 after:h-px after:bg-gray-200">
-          Or sign in with id
+          Or log in with Email
         </div>
 
         <form className="w-3/5">

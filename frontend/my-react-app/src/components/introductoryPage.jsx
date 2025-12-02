@@ -12,7 +12,7 @@ import AIimage from '../assets/AIimage.png';
 import Hashtag from '../assets/hashtag.png';
 import X from '../assets/X.png';
 import Youtube from '../assets/youtube.svg';
-import { NavLink } from 'react-router-dom';
+import { NavLink ,Link } from 'react-router-dom';
 import DownArrow from '../assets/DownArrow.png';
 import facebook from '../assets/Facebook.svg';
 import twitter from '../assets/X.png';
@@ -32,7 +32,7 @@ const IntroductoryPage = () => {
     <div className='bg-blue'>
       <navbar className='flex justify-between p-3 bg-[#99D98C]'>
         <logo className='ml-4'>
-            <img src="path/to/logo.png" alt="App Logo" />
+          <img src="path/to/logo.png" alt="App Logo" />
         </logo>
         <div className='flex text-lg font-mono pt-1 gap-3 '>
             <div
@@ -79,7 +79,7 @@ const IntroductoryPage = () => {
               <h1 className='font-sans text-6xl font-bold mb-6'>Welcome to Social Media Schedular</h1>
               <p className='text-xl mb-8'>where you can create Thoughts and Impresions of your in a new way and connect like never before.</p>
               <div className='border-[1px] border-[#0A2133] rounded-full p-[2px]'>
-                <button className='bg-[#52B69A] text-white w-[190px] font-bold py-3 px-5 rounded-full text-lg hover:border-black hover:bg-gray-200 hover:text-black transition duration-300 flex items-center justify-center text-center gap-2'>Get Started <img className='h-8' src={arrow} alt="" /></button>
+                <Link to="/signin" className='bg-[#52B69A] text-white w-[190px] font-bold py-3 px-5 rounded-full text-lg hover:border-black hover:bg-gray-200 hover:text-black transition duration-300 flex items-center justify-center text-center gap-2'>Get Started <img className='h-8' src={arrow} alt="" /></Link>
               </div>
             </div>
             <div className='Left w-full mt-[-100px] pb-5 flex justify-between'>
