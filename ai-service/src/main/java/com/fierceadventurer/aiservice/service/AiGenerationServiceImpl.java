@@ -1,8 +1,11 @@
 package com.fierceadventurer.aiservice.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fierceadventurer.aiservice.client.MediaServiceClient;
 import com.fierceadventurer.aiservice.dto.GenerateRequestDto;
 import com.fierceadventurer.aiservice.dto.GenerateResponseDto;
+import com.fierceadventurer.aiservice.event.AiGenerationCompletedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -11,9 +14,11 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.content.Media;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.ResponseEntity;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MimeType;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -28,6 +33,9 @@ public class AiGenerationServiceImpl implements AiGenerateService {
     private final ChatClient chatClient;
     private final MediaServiceClient mediaServiceClient;
 
+    private final KafkaTemplate<String , String> kafkaTemplate;
+    private final ObjectMapper objectMapper;
+
     @Override
     public GenerateResponseDto generateContent(GenerateRequestDto request) {
         log.info("Generating content for prompt: [{}...], with {} ",
@@ -41,7 +49,6 @@ public class AiGenerationServiceImpl implements AiGenerateService {
             }
         }
 
-        // Build the UserMessage with media using the builder
         UserMessage userMessage = UserMessage.builder()
                 .text(request.getPrompt())
                 .media(mediaList)
@@ -71,7 +78,31 @@ public class AiGenerationServiceImpl implements AiGenerateService {
                 .filter(s -> !s.isEmpty())
                 .collect(Collectors.toList());
 
+        String combinedContent = String.join("\n\n---\n\n", options);
+        publishToKafka(request , combinedContent);
         return new GenerateResponseDto(options);
+    }
+
+    private void publishToKafka(GenerateRequestDto request , String generateContent){
+        try {
+            AiGenerationCompletedEvent event = new AiGenerationCompletedEvent(
+                    request.getPrompt(),
+                    generateContent,
+                    "LINKEDIN",
+                    LocalDateTime.now().toString()
+            );
+
+            String jsonEvent = objectMapper.writeValueAsString(event);
+
+            kafkaTemplate.send("ai-service-completed-topic", jsonEvent);
+            log.info("Successfully published AI generation event to Kafka");
+        }
+        catch (JsonProcessingException e){
+            log.error("Failed to serialize AI event", e);
+        }
+        catch (Exception e) {
+            log.error("Failed to send AI event to Kafka", e);
+        }
     }
 
     private Media downloadMedia(UUID mediaId) {
@@ -88,7 +119,6 @@ public class AiGenerationServiceImpl implements AiGenerateService {
                     ? response.getHeaders().getContentType().toString()
                     : "application/octet-stream";
 
-            // wrap bytes in a Resource and construct Media with MimeType + Resource
             ByteArrayResource resource = new ByteArrayResource(data);
             MimeType mimeType = MimeType.valueOf(contentType);
 
@@ -98,4 +128,6 @@ public class AiGenerationServiceImpl implements AiGenerateService {
             throw new RuntimeException("failed to fetch media " + mediaId, e);
         }
     }
+
+
 }
