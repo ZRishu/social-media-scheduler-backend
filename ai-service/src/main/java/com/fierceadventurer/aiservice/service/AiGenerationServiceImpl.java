@@ -45,7 +45,12 @@ public class AiGenerationServiceImpl implements AiGenerateService {
         List<Media> mediaList = new ArrayList<>();
         if (request.getMediaIds() != null && !request.getMediaIds().isEmpty()) {
             for (UUID mediaId : request.getMediaIds()) {
-                mediaList.add(downloadMedia(mediaId));
+                try{
+                    mediaList.add(downloadMedia(mediaId));
+                }
+                catch (Exception e){
+                    log.warn("Skipping failed media ID {}: {}", mediaId, e.getMessage());
+                }
             }
         }
 
@@ -59,28 +64,39 @@ public class AiGenerationServiceImpl implements AiGenerateService {
                 Generate exactly 2-3 distinct, engaging options for a post based on user's prompt and attached media.
 
                 RULES:
+                - Do NOT use conversational filler (e.g. "Here is your post").
+                - Use short paragraphs and emojis.
                 - Separate each option with exactly three hashes: ###
                 - Do NOT include my introductory or concluding text.
                 - Start immediately with first option.
+                - If an image is provided, describe it briefly in the context of the post.
                 - Use appropriate hashtags if relevant to the prompt.
                 """;
 
-        ChatResponse response = chatClient.prompt()
-                .system(systemPrompt)
-                .messages(userMessage)
-                .call()
-                .chatResponse();
+        try{
+            ChatResponse response = chatClient.prompt()
+                    .system(systemPrompt)
+                    .messages(userMessage)
+                    .call()
+                    .chatResponse();
 
-        String rawContent = response.getResult().getOutput().getText();
+            String rawContent = response.getResult().getOutput().getText();
 
-        List<String> options = Arrays.stream(rawContent.split("###"))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .collect(Collectors.toList());
+            List<String> options = Arrays.stream(rawContent.split("###"))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .collect(Collectors.toList());
 
-        String combinedContent = String.join("\n\n---\n\n", options);
-        publishToKafka(request , combinedContent);
-        return new GenerateResponseDto(options);
+            String combinedContent = String.join("\n\n---\n\n", options);
+            publishToKafka(request , combinedContent);
+            return new GenerateResponseDto(rawContent);
+        }
+        catch (Exception e){
+            log.error("AI Provider Error", e);
+            return new GenerateResponseDto("Error generating content. Please try again without media or check backend logs.");
+
+        }
+
     }
 
     private void publishToKafka(GenerateRequestDto request , String generateContent){
@@ -88,7 +104,7 @@ public class AiGenerationServiceImpl implements AiGenerateService {
             AiGenerationCompletedEvent event = new AiGenerationCompletedEvent(
                     request.getPrompt(),
                     generateContent,
-                    "LINKEDIN",
+                    request.getPlatform() != null ? request.getPlatform() : "LINKEDIN",
                     LocalDateTime.now().toString()
             );
 
