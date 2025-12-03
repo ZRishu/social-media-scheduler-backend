@@ -23,8 +23,9 @@ public class SecurityConfig {
             "/swagger-ui/**",
             "/v3/api-docs/**",
             "/webjars/swagger-ui/**",
-            "/v3/api-docs/swagger-config", // Specific endpoint for Swagger config
-            "/actuator/health"
+            "/v3/api-docs/swagger-config",
+            "/actuator/health",
+            "/api/v1/public/**"
     };
 
     @Bean
@@ -32,7 +33,8 @@ public class SecurityConfig {
     public CorsWebFilter corsWebFilter() {
         CorsConfiguration config = new CorsConfiguration();
         // Updated origins to include common local test servers
-        config.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:63342"));
+        config.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:63342","http://localhost:8000",
+                "http://127.0.0.1:8000"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"));
         config.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With"));
         config.setAllowCredentials(true);
@@ -47,18 +49,15 @@ public class SecurityConfig {
     @Bean
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
         http
-                // 1. Disable CSRF (not needed for stateless JWTs)
+
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
 
-                // 2. Set up authorization rules
+
                 .authorizeExchange(exchange -> exchange
-                        // 3. Allow all requests to our public URLs (Swagger, Health)
                         .pathMatchers(PUBLIC_URLS).permitAll()
-                        // 4. Require authentication for ALL other requests
                         .anyExchange().authenticated()
                 )
 
-                // 5. Configure JWT validation and role conversion
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(new KeycloakRoleConverter()))
                 );
