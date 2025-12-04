@@ -14,4 +14,6 @@ public class GenerateRequestDto {
     private List<UUID> mediaIds;
 
     private String tone;
+
+    private String platform;
 }

@@ -33,14 +33,28 @@ spring:
           uri: http://ai-service:8080
           predicates:
             - Path=/api/v1/ai/**
+            -
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins:
+              - "http://localhost:63342"
+              - "http://localhost:8000"
+              - "http://127.0.0.1:8000"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+            allowCredentials: true
 
   # --- Spring Security Configuration (FIXED) ---
   security:
     oauth2:
       resourceserver:
         jwt:
-          # These are the INTERNAL Docker network URLs.
-          # This is cleaner and removes the need for compose variables.
           issuer-uri: http://keycloak:8088/realms/user-service
           jwk-set-uri: http://keycloak:8080/realms/user-service/protocol/openid-connect/certs
 
@@ -63,7 +77,6 @@ springdoc:
         discovery-id: api-gateway
   swagger-ui:
     oauth:
-      # This points the "Authorize" button to the correct Keycloak client
       client-id: springdoc-swagger
       use-pkce-with-authorization-code-grant: true
 

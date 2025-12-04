@@ -8,6 +8,5 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class GenerateResponseDto {
-
-    private List<String> options;
+    private String content;
 }
