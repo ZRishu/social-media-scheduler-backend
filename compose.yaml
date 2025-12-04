@@ -175,6 +175,9 @@ services:
       - SERVER_PORT=8080
       - GROQ_API_KEY=${GROQ_API_KEY}
       - CLIENTS_MEDIA_SERVICE_URL=http://media-service:8080
+      - KAFKA_URL=${KAFKA_URL}
+      - KAFKA_KEY=${KAFKA_KEY}
+      - KAFKA_SECRET=${KAFKA_SECRET}
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://localhost:8088/realms/user-service
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/user-service/protocol/openid-connect/certs
     networks: [ social_media_net ]
