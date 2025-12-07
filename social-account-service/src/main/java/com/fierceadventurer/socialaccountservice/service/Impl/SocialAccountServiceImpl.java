@@ -304,7 +304,7 @@ public class SocialAccountServiceImpl implements SocialAccountService {
 
             ObjectMapper mapper = new ObjectMapper();
             JsonNode root = mapper.readTree(responseJson);
-            String accessToken = root.path("access_Token").asText();
+            String accessToken = root.path("access_token").asText();
 
             if(accessToken == null || accessToken.isEmpty()){
                 throw new RuntimeException("No Linkedin Token found in keycloak session");
