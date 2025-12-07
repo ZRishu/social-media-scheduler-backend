@@ -85,4 +85,11 @@ public class SocialAccountController {
         String postId = socialAccountService.publishContent(accountId, requestDto);
         return ResponseEntity.ok(postId);
     }
+
+    @PostMapping("/sync")
+    public ResponseEntity<Void> syncFromKeycloak(@AuthenticationPrincipal Jwt jwt){
+        UUID userId = UUID.fromString(jwt.getSubject());
+        socialAccountService.syncAccountFromKeycloak(userId , jwt.getTokenValue());
+        return ResponseEntity.ok().build();
+    }
 }
