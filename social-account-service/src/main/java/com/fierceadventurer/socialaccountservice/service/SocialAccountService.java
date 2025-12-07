@@ -18,7 +18,7 @@ public interface SocialAccountService {
     String getActiveAccessToken(UUID accountId);
     void validateAccountOwnership(UUID accountId, UUID userId);
     Page<SocialAccountResponseDto> getAccountsByUserId(UUID userId, Pageable pageable);
-
+    void syncAccountFromKeycloak(UUID userId, String userJwtToken);
     String publishContent(UUID accountId, PublishRequestDto requestDto);
 
 }
