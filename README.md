@@ -82,7 +82,7 @@ A comprehensive social media management platform that helps creators, marketers,
 ### Infrastructure
 - **Containers**: Docker, Docker Compose
 - **Orchestration**: Kubernetes
-- **CI/CD**: GitHub Actions
+- **CI/CD**: GitHub Actions, Jenkins
 - **Monitoring**: Prometheus, Grafana
 - **Tracing**: OpenTelemetry
 
