@@ -92,9 +92,8 @@ A comprehensive social media management platform that helps creators, marketers,
 
 | Service | Responsibility | Technology |
 |---------|---------------|------------|
-| **API Gateway** | Routing, authentication, rate limiting | Spring Cloud Gateway |
-| **Auth Service** | User authentication, OAuth2, JWT tokens | Spring Security |
-| **User Service** | Profiles, preferences, settings | Spring Boot |
+| **API Gateway** | Routing, authentication | Spring Cloud Gateway |
+| **User Service** | Profiles, preferences, settings, User authentication, OAuth2, JWT tokens | Spring Security |
 | **Scheduler Service** | Job scheduling, timezone handling | Spring Boot |
 | **Post Service** | Multi-platform publishing, retries | Spring Boot, Apache Kafka |
 | **Social Account Service** | Manage multiple social accounts | Spring Kafka, Apache Kafka |
