@@ -91,16 +91,16 @@ A comprehensive social media management platform that helps creators, marketers,
 ## Services
 
 | Service | Responsibility | Technology |
-|---------|---------------|------------|
+|---------|--------------------------------|------------|
 | **API Gateway** | Routing, authentication | Spring Cloud Gateway |
 | **User Service** | Profiles, preferences, settings, User authentication, OAuth2, JWT tokens | Spring Security |
 | **Scheduler Service** | Job scheduling, timezone handling | Spring Boot |
 | **Post Service** | Multi-platform publishing, retries | Spring Boot, Apache Kafka |
 | **Social Account Service** | Manage multiple social accounts | Spring Kafka, Apache Kafka |
-| **Analytics Service** | Metrics collection, reporting | Spring Boot |
+| **Analytics Service** |Suggests Best Time for Post | Spring Boot |
 | **AI Service** | Best time, hashtags, variations | Spring Boot |
 | **Notification Service** | Multi-channel notifications | Spring Boot, FCM |
-| **Media Service** | Stores to media assets of file | Spring Boot, AMAZON S3 |
+| **Media Service** | Stores to media assets of file | Spring Boot, MINIO S3 |
 
 ---
 
