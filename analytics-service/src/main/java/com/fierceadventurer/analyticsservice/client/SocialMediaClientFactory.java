@@ -8,6 +8,8 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class SocialMediaClientFactory {
+
+
     private final ApplicationContext context;
 
     public ExternalPlatformClient getClient(Provider provider){
