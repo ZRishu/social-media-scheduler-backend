@@ -34,13 +34,13 @@ public class AnalysisJobRunner {
     @Scheduled(fixedDelay = 5 , timeUnit = TimeUnit.MINUTES)
     public void findAndProcessPendingJobs() {
         log.info("Running scheduled job runner....");
-        List<AnalysisJob> pendingJobs = analysisJobRepository.findTopByStatusOrderByCreatedAtAsc(AnalysisStatus.PENDING);
+        Optional<AnalysisJob> pendingJobs = analysisJobRepository.findTopByStatusOrderByCreatedAtAsc(AnalysisStatus.PENDING);
         if(pendingJobs.isEmpty()) {
             log.info("No pending analysis jobs found.");
             return;
         }
 
-        AnalysisJob job = pendingJobs.get(0);
+        AnalysisJob job = pendingJobs.get();
         job.setStatus(AnalysisStatus.FETCHING_DATA);
         analysisJobRepository.save(job);
 
@@ -55,13 +55,13 @@ public class AnalysisJobRunner {
             log.error("Failed to process analysis job {}: {}" , job.getJobId(), e.getMessage());
             job.setStatus(AnalysisStatus.FAILED);
             String errorMessage = e.getMessage() != null ? e.getMessage() : "Unknown Error";
-            job.setLastError(errorMessage.substring(0 , Math.min(errorMessage.length() , 255)));
+            job.setLastError(errorMessage.substring(0 , Math.min(errorMessage.length() , 1000)));
             analysisJobRepository.save(job);
         }
     }
 
     public void performAnalysis(AnalysisJob job) throws Exception{
-        log.info("Starting analysis for job: {}" , job.getJobId());
+        log.info("Starting analysis for job: {} (Provider: {})" , job.getJobId(), job.getProvider());
 
         String accessToken = socialAccountClient.getAccessToken(job.getSocialAccountId()).getAccessToken();
 
@@ -78,12 +78,12 @@ public class AnalysisJobRunner {
         job.setStatus(AnalysisStatus.ANALYZING);
         analysisJobRepository.save(job);
 
-        List<OptimalTimeSlot> newTimeSlots = calulateScores(job.getSocialAccountId() , posts);
+        List<OptimalTimeSlot> newTimeSlots = calculateScores(job.getSocialAccountId() , posts);
 
-        optimalTimeSlotRepository.saveAll(newTimeSlots);
+        saveOptimalSlots(job.getSocialAccountId() , newTimeSlots);
     }
 
-    private List<OptimalTimeSlot> calulateScores(UUID socialAccountId, List<HistoricalPost> posts){
+    private List<OptimalTimeSlot> calculateScores(UUID socialAccountId, List<HistoricalPost> posts){
 
         Map<DayOfWeek , Map<Integer, List<Integer>>> engagementBySlot = new EnumMap<>(DayOfWeek.class);
 
@@ -128,6 +128,7 @@ public class AnalysisJobRunner {
                     slot.setEngagementScore(normalizedScore);
                     return slot;
                 })
+                .filter(slot -> slot.getEngagementScore() > 0.1)
                 .collect(Collectors.toList());
 
     }

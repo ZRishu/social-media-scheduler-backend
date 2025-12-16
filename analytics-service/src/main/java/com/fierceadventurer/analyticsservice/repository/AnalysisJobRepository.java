@@ -13,5 +13,5 @@ import java.util.UUID;
 public interface AnalysisJobRepository extends JpaRepository<AnalysisJob, UUID>{
     Optional<AnalysisJob> findBySocialAccountId(UUID socialAccountId);
 
-    List<AnalysisJob> findTopByStatusOrderByCreatedAtAsc(AnalysisStatus status);
+    Optional<AnalysisJob> findTopByStatusOrderByCreatedAtAsc(AnalysisStatus status);
 }
