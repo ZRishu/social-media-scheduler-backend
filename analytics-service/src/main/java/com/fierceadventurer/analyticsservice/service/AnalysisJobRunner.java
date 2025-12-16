@@ -11,6 +11,7 @@ import com.fierceadventurer.analyticsservice.enums.Provider;
 import com.fierceadventurer.analyticsservice.repository.AnalysisJobRepository;
 import com.fierceadventurer.analyticsservice.repository.OptimalTimeSlotRepository;
 import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -33,7 +34,7 @@ public class AnalysisJobRunner {
     @Scheduled(fixedDelay = 5 , timeUnit = TimeUnit.MINUTES)
     public void findAndProcessPendingJobs() {
         log.info("Running scheduled job runner....");
-        List<AnalysisJob> pendingJobs = analysisJobRepository.findByStatus(AnalysisStatus.PENDING);
+        List<AnalysisJob> pendingJobs = analysisJobRepository.findTopByStatusOrderByCreatedAtAsc(AnalysisStatus.PENDING);
         if(pendingJobs.isEmpty()) {
             log.info("No pending analysis jobs found.");
             return;
@@ -51,9 +52,10 @@ public class AnalysisJobRunner {
             log.info("Successfully completed analysis for job: {}" , job.getJobId());
         }
         catch (Exception e){
-            log.error("Failed to process analysis job {]: {}" , job.getJobId(), e.getMessage());
+            log.error("Failed to process analysis job {}: {}" , job.getJobId(), e.getMessage());
             job.setStatus(AnalysisStatus.FAILED);
-            job.setLastError(e.getMessage());
+            String errorMessage = e.getMessage() != null ? e.getMessage() : "Unknown Error";
+            job.setLastError(errorMessage.substring(0 , Math.min(errorMessage.length() , 255)));
             analysisJobRepository.save(job);
         }
     }
@@ -77,8 +79,6 @@ public class AnalysisJobRunner {
         analysisJobRepository.save(job);
 
         List<OptimalTimeSlot> newTimeSlots = calulateScores(job.getSocialAccountId() , posts);
-
-        optimalTimeSlotRepository.deleteAllBySocialAccountId(job.getSocialAccountId());
 
         optimalTimeSlotRepository.saveAll(newTimeSlots);
     }
@@ -130,5 +130,11 @@ public class AnalysisJobRunner {
                 })
                 .collect(Collectors.toList());
 
+    }
+
+    @Transactional
+    protected void saveOptimalSlots(UUID socialAccountId, List<OptimalTimeSlot> newTimeSlots) {
+        optimalTimeSlotRepository.deleteAllBySocialAccountId(socialAccountId);
+        optimalTimeSlotRepository.saveAll(newTimeSlots);
     }
 }

@@ -53,7 +53,12 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         }
 
         OptimalTimeSlot bestSlot = slots.get(0);
-        LocalDateTime nextWeekBestSlot = calculateNextOccurrence(now.plusWeeks(1),bestSlot.getDayOfWeek(), bestSlot.getHourOfDay());
+        LocalDateTime nextWeekBestSlot = calculateNextOccurrence(now.plusWeeks(1)
+                ,bestSlot.getDayOfWeek(), bestSlot.getHourOfDay());
+
+        if(!nextWeekBestSlot.isAfter(earlistAllowedTime)){
+            nextWeekBestSlot = nextWeekBestSlot.plusWeeks(1);
+        }
         log.info("All optimal slots are within the buffer. Scheduling for next week at best slot: {}", nextWeekBestSlot);
         return new NextBestTimeResponseDto(nextWeekBestSlot);
     }
