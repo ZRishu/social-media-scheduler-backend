@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.ZoneOffset;
+import java.util.Comparator;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -29,11 +31,15 @@ public class InternalController {
         SocialAccount account = socialAccountRepository.findById(accountId)
                 .orElseThrow(()-> new RuntimeException("Account not found: " + accountId));
 
+        List<AuthToken> tokens = account.getAuthTokens();
         if(account.getAuthTokens() == null || account.getAuthTokens().isEmpty()){
             throw new RuntimeException("No auth tokens found for account: " + accountId);
         }
 
-        AuthToken tokenEntity = account.getAuthTokens().get(0);
+        AuthToken tokenEntity = tokens.stream()
+                .filter(t -> t.getCreatedAt() != null)
+                .max(Comparator.comparing(AuthToken::getCreatedAt))
+                .orElse(tokens.get(tokens.size() -1));
 
         long expiresAtEpoch = 0;
         if(tokenEntity.getExpiry() != null){
