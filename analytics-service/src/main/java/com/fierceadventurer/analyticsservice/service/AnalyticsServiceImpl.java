@@ -31,6 +31,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     private final OptimalTimeSlotRepository optimalTimeSlotRepository;
     private final AnalysisJobRepository analysisJobRepository;
     private final AnalyticsMapper analyticsMapper;
+    private final AnalysisJobRunner analysisJobRunner;
     private static final int MINIMUM_SCHEDULING_DELAY_MINUTES = 30;
 
 
@@ -49,9 +50,29 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                             newJob.setStatus(AnalysisStatus.PENDING);
                             return analysisJobRepository.save(newJob);
                         });
+
+        if(job.getStatus() == AnalysisStatus.FAILED){
+            log.info("Job {} was in FAILED state. Resetting to PENDING for retry.", job.getJobId());
+            job.setStatus(AnalysisStatus.PENDING);
+            job.setLastError(null);
+            analysisJobRepository.save(job);
+        }
         List<OptimalTimeSlot> slots = optimalTimeSlotRepository.
                 findBySocialAccountIdOrderByEngagementScoreDesc(socialAccountId);
 
+        if(slots.isEmpty()){
+            log.info("No slots found. Triggering immediate analysis for job {}", job.getJobId());
+            try{
+                analysisJobRunner.performAnalysis(job);
+
+                slots = optimalTimeSlotRepository.findBySocialAccountIdOrderByEngagementScoreDesc(socialAccountId);
+
+                log.info("Immediate analysis complete. Found {} slots.", slots.size());
+
+            } catch (Exception e) {
+                log.error("Immediate analysis failed: {}", e.getMessage());
+            }
+        }
         if(job.getProvider() == Provider.LINKEDIN){
             slots = filterForBusinessHours(slots);
         }
