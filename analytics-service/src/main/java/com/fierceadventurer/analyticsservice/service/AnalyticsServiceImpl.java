@@ -5,6 +5,7 @@ import com.fierceadventurer.analyticsservice.dto.NextBestTimeResponseDto;
 import com.fierceadventurer.analyticsservice.dto.OptimalTimeSlotDto;
 import com.fierceadventurer.analyticsservice.entity.AnalysisJob;
 import com.fierceadventurer.analyticsservice.entity.OptimalTimeSlot;
+import com.fierceadventurer.analyticsservice.enums.AnalysisStatus;
 import com.fierceadventurer.analyticsservice.enums.Provider;
 import com.fierceadventurer.analyticsservice.mapper.AnalyticsMapper;
 import com.fierceadventurer.analyticsservice.repository.AnalysisJobRepository;
@@ -34,11 +35,20 @@ public class AnalyticsServiceImpl implements AnalyticsService {
 
 
     @Override
+    @Transactional
     public NextBestTimeResponseDto findNextBestTime(UUID socialAccountId) {
         log.info("Calculating next best time for social account {}", socialAccountId);
 
         AnalysisJob job = analysisJobRepository.findBySocialAccountId(socialAccountId)
-                .orElseThrow(()-> new RuntimeException("Analysis Job not found. Cannot determine provider."));
+                .orElseGet(()-> {
+                            log.warn("Analysis Job missing for account {}." +
+                                    " Self-repairing (Lazy Init).", socialAccountId);
+                            AnalysisJob newJob = new AnalysisJob();
+                            newJob.setSocialAccountId(socialAccountId);
+                            newJob.setProvider(Provider.LINKEDIN);
+                            newJob.setStatus(AnalysisStatus.PENDING);
+                            return analysisJobRepository.save(newJob);
+                        });
         List<OptimalTimeSlot> slots = optimalTimeSlotRepository.
                 findBySocialAccountIdOrderByEngagementScoreDesc(socialAccountId);
 
