@@ -17,7 +17,7 @@ import java.time.ZoneOffset;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/interal/accounts")
+@RequestMapping("/api/v1/internal/accounts")
 @RequiredArgsConstructor
 @Slf4j
 public class InternalController {
