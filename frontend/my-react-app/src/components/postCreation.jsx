@@ -5,7 +5,7 @@ import LinkedIn from '../assets/linkedIn.png';
 import Instagram from '../assets/instagram.png';
 import YouTube from '../assets/youtube.png';
 import Create from '../assets/create.png';
-import Home from '../assets/home.png';
+import HomeIcon from '../assets/home.png';
 import Notification from '../assets/notification.png';
 import Setting from '../assets/setting.png';
 import Calendar from '../assets/calendar.png';
@@ -13,6 +13,7 @@ import Add from '../assets/add.png';
 import AiImage from '../assets/AI image.png';
 import Music from '../assets/music.png';
 import User from '../assets/user.png';
+import Navbar from './subcomponent/navbar';
 
 function App() {
   const [active, setActive] = useState('Create');
@@ -24,7 +25,7 @@ function App() {
   const audioFileRef = useRef(null);
 
   const icons = [
-    { name: 'Home', src: Home },
+    { name: 'Home', src: HomeIcon , direct:'/home' },
     { name: 'Create', src: Create },
     { name: 'Notification', src: Notification },
     { name: 'Calendar', src: Calendar },
@@ -42,13 +43,6 @@ function App() {
   const postGneration = [
     { name: 'AI Post Suggestions' },
     { name: 'AI Image Suggestions', src: AiImage },
-  ];
-
-  const postAreaConfig = [
-    { name: 'Create Post' },
-    { name: 'Drafts' },
-    { name: 'Scheduled Posts' },
-    { name: 'Past Posts' },
   ];
 
   const handleAddFiles = () => {
@@ -124,20 +118,7 @@ function App() {
         <main className="flex-1 flex flex-col">
           <header className="flex justify-between items-center px-6 py-2 border-b border-gray-200 bg-white shadow-sm">
             {/* navbar */}
-            <nav className="flex space-x-6 p-1">
-              {postAreaConfig.map((item) => (
-                <button
-                  key={item.name}
-                  onClick={() => setActive(item.name)}
-                  className={`relative px-0 text-sm font-medium ${active === item.name
-                      ? 'text-[#34A0A4] font-semibold pb-2 after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1.8px] after:bg-[#34A0A4]'
-                      : 'text-gray-600 hover:text-[#34A0A4] transition-colors pb-2'
-                    }`}
-                >
-                  {item.name}
-                </button>
-              ))}
-            </nav>
+            <Navbar />
             <div className="flex items-center space-x-3">
               <button className="px-4 py-2 bg-[#34A0A4] text-white rounded-lg text-sm font-medium hover:bg-[#184E77] transition-colors shadow-md">Calendar Schedule</button>
               <button className="p-1 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
@@ -172,8 +153,6 @@ function App() {
                   <button onClick={handleAddImage}>
                     <img className='h-7 opacity-80 hover:scale-105 hover:opacity-100 transition-all' src={AiImage} alt="Image" />
                   </button>
-
-                  {}
                   <div className="relative">
                     <button
                       className="AddFiles"
