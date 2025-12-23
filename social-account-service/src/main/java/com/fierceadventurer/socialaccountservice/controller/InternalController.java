@@ -1,25 +1,57 @@
 package com.fierceadventurer.socialaccountservice.controller;
 
 import com.fierceadventurer.socialaccountservice.dto.TokenResponseDto;
+import com.fierceadventurer.socialaccountservice.entities.AuthToken;
+import com.fierceadventurer.socialaccountservice.entities.SocialAccount;
+import com.fierceadventurer.socialaccountservice.repository.SocialAccountRepository;
 import com.fierceadventurer.socialaccountservice.service.SocialAccountService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.ZoneOffset;
+import java.util.Comparator;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/interal/accounts")
+@RequestMapping("/api/v1/internal/accounts")
 @RequiredArgsConstructor
+@Slf4j
 public class InternalController {
-    private final SocialAccountService socialAccountService;
 
+    private final SocialAccountRepository socialAccountRepository;
     @GetMapping("/{accountId}/token")
     public ResponseEntity<TokenResponseDto> getAccessToken(@PathVariable UUID accountId) {
-        String token = socialAccountService.getActiveAccessToken(accountId);
-        return ResponseEntity.ok(new TokenResponseDto(token));
+        log.info("Internal request: Fetching token for account {}", accountId);
+        SocialAccount account = socialAccountRepository.findById(accountId)
+                .orElseThrow(()-> new RuntimeException("Account not found: " + accountId));
+
+        List<AuthToken> tokens = account.getAuthTokens();
+        if(account.getAuthTokens() == null || account.getAuthTokens().isEmpty()){
+            throw new RuntimeException("No auth tokens found for account: " + accountId);
+        }
+
+        AuthToken tokenEntity = tokens.stream()
+                .filter(t -> t.getCreatedAt() != null)
+                .max(Comparator.comparing(AuthToken::getCreatedAt))
+                .orElse(tokens.get(tokens.size() -1));
+
+        long expiresAtEpoch = 0;
+        if(tokenEntity.getExpiry() != null){
+            expiresAtEpoch = tokenEntity.getExpiry().toEpochSecond(ZoneOffset.UTC);
+        }
+
+        TokenResponseDto response = TokenResponseDto.builder()
+                .accessToken(tokenEntity.getAccessToken())
+                .refreshToken(tokenEntity.getRefreshToken())
+                .expiresAt(expiresAtEpoch)
+                .build();
+
+        return ResponseEntity.ok(response);
     }
 }

@@ -1,5 +1,7 @@
 package com.fierceadventurer.socialaccountservice.service.Impl;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fierceadventurer.socialaccountservice.client.TokenRefreshClient;
 import com.fierceadventurer.socialaccountservice.client.TokenRefreshClientFactory;
 import com.fierceadventurer.socialaccountservice.client.impl.LinkedInConnectClient;
@@ -20,12 +22,14 @@ import com.fierceadventurer.socialaccountservice.repository.SocialAccountReposit
 import com.fierceadventurer.socialaccountservice.service.SocialAccountService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.hc.core5.http.HttpHeaders;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestClient;
 
 import java.time.LocalDateTime;
 import java.util.Comparator;
@@ -282,5 +286,78 @@ public class SocialAccountServiceImpl implements SocialAccountService {
     public Page<SocialAccountResponseDto> getAccountsByUserId(UUID userId, Pageable pageable) {
         return socialAccountRepository.findByUserId(userId, pageable)
                 .map(socialAccountMapper::toDto);
+    }
+
+    @Override
+    @Transactional
+    public void syncAccountFromKeycloak(UUID userId, String userJwtToken) {
+        log.info("Attempting to sync LinkedIn token from keycloak for user: {}" , userId);
+
+        try{
+
+            String keycloakBrokerUrl = "http://keycloak:8080/realms/user-service/broker/linkedin/token";
+            String responseJson = RestClient.create().get()
+                    .uri(keycloakBrokerUrl)
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + userJwtToken)
+                    .retrieve()
+                    .body(String.class);
+
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode root = mapper.readTree(responseJson);
+            String accessToken = root.path("access_token").asText();
+
+            if(accessToken == null || accessToken.isEmpty()){
+                throw new RuntimeException("No Linkedin Token found in keycloak session");
+            }
+
+            log.info("Found stored Linkedin token in Keycloak. Syncing ...");
+
+            LinkedInUserInfo userInfo = linkedInConnectClient.fetchUserProfile(accessToken);
+
+            LinkedInTokenResponse tokenResponse = new LinkedInTokenResponse();
+
+            tokenResponse.setAccessToken(accessToken);
+            tokenResponse.setExpiresIn(5184000L);
+            tokenResponse.setRefreshToken(null);
+
+            String personUrn = "urn:li:person" + userInfo.getExternalId();
+            saveOrUpdateAccount(
+                    userId,
+                    personUrn,
+                    userInfo.getFullName(),
+                    userInfo.getEmail(),
+                    "PERSONAL",
+                    userInfo.getPictureUrl(),
+                    tokenResponse
+            );
+
+            try{
+                LinkedInOrgResponse orgs = linkedInConnectClient.fetchUserCompanies(accessToken);
+                if(orgs != null && orgs.getElements() != null){
+                    for(LinkedInOrgResponse.Element element : orgs.getElements()){
+                        if(element.getOrganizationDetails() != null){
+                            String orgId = element.getOrganizationDetails().getId();
+                            saveOrUpdateAccount(
+                                    userId,
+                                    "urn:li:organization:" + orgId,
+                                    element.getOrganizationDetails().getLocalizedName(),
+                                    "org_" + orgId + "@linkedin.business",
+                                    "BUSINESS",
+                                    null,
+                                    tokenResponse
+                            );
+                        }
+                    }
+                }
+            }
+
+            catch (Exception e){
+                log.warn("Could not sync organizations: {}", e.getMessage());
+            }
+
+        }
+        catch (Exception e){
+            log.error("Failed to sync from Keycloak. User might not be logged in via LinkedIn IDP.", e);
+        }
     }
 }
