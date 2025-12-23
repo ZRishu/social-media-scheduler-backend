@@ -64,20 +64,36 @@ public class LinkedinApiClient implements ExternalPlatformClient {
         HttpHeaders headers = createHeaders(accessToken);
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
-        ResponseEntity<LinkedInProfileResponse> response = restTemplate.exchange(
-                url,
-                HttpMethod.GET,
-                entity,
-                LinkedInProfileResponse.class
-        );
+        try {
+            ResponseEntity<LinkedInProfileResponse> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    entity,
+                    LinkedInProfileResponse.class
+            );
 
-        if(response.getBody() == null || response.getBody().getId() == null){
-            throw new RuntimeException("Failed to retrieve LinkedIn Profile ID");
+            if(response.getBody() == null || response.getBody().getId() == null){
+                throw new RuntimeException("Failed to retrieve LinkedIn Profile: Empty Response");
+            }
+
+            String id = response.getBody().getSub();
+
+            if(id == null){
+                id = response.getBody().getId();
+            }
+
+            if(id == null){
+                log.error("Linkedin response missing 'sub. Body: {}", response.getBody());
+                throw new RuntimeException("Failed to retrieve LinkedIn Profile ID ('sub' field missing)");
+            }
+
+            return "urn:li:person:" + response.getBody().getId();
+        } catch (RuntimeException e) {
+            log.error("/userinfo endpoint failed");
+            throw new RuntimeException(e);
         }
-
-        return "urn:li:person:" + response.getBody().getId();
-
     }
+
 
     private List<HistoricalPost> fetchUserPosts(String accessToken, String userUrn) {
         String authorsParamValue = "List(" + userUrn + ")";
