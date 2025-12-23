@@ -56,11 +56,11 @@ public class LinkedinApiClient implements ExternalPlatformClient {
         }
         catch (Exception e){
             log.error("Unexpected error fetching Linkedin data", e);
-            throw  e;
+            throw e;
         }
     }
     private String fetchUserUrn(String accessToken) {
-        String url = linkedinApiUrl + "/userinfo";
+        String url =  "https://api.linkedin.com/v2/userinfo";
         HttpHeaders headers = createHeaders(accessToken);
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
@@ -72,8 +72,8 @@ public class LinkedinApiClient implements ExternalPlatformClient {
                     LinkedInProfileResponse.class
             );
 
-            if(response.getBody() == null || response.getBody().getId() == null){
-                throw new RuntimeException("Failed to retrieve LinkedIn Profile: Empty Response");
+            if(response.getBody() == null){
+                throw new RuntimeException("Failed to retrieve LinkedIn Profile: Response Body is Null");
             }
 
             String id = response.getBody().getSub();
@@ -83,14 +83,14 @@ public class LinkedinApiClient implements ExternalPlatformClient {
             }
 
             if(id == null){
-                log.error("Linkedin response missing 'sub. Body: {}", response.getBody());
+                log.error("Linkedin response missing 'sub'. Body: {}", response.getBody());
                 throw new RuntimeException("Failed to retrieve LinkedIn Profile ID ('sub' field missing)");
             }
 
             return "urn:li:person:" + response.getBody().getId();
-        } catch (RuntimeException e) {
-            log.error("/userinfo endpoint failed");
-            throw new RuntimeException(e);
+        } catch (HttpClientErrorException e) {
+            log.error("LinkedIn UserInfo Request Failed: {} - {}", e.getStatusCode(), e.getResponseBodyAsString());
+            throw new RuntimeException("LinkedIn Identity Error: " + e.getStatusCode());
         }
     }
 
@@ -133,7 +133,7 @@ public class LinkedinApiClient implements ExternalPlatformClient {
         }
         catch (HttpClientErrorException e){
             log.error("LinkedIn API Error [{}]: {}", e.getStatusCode(), e.getResponseBodyAsString());
-            throw new RuntimeException("Failed to fetch LinkedIn posts: " + e.getStatusText());
+            throw new RuntimeException("Failed to fetch LinkedIn posts: " + e.getStatusCode());
         }
 
 
