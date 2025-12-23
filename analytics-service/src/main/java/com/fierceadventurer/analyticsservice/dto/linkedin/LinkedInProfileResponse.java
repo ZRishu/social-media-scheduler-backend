@@ -7,4 +7,5 @@ import lombok.Data;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class LinkedInProfileResponse {
     private String id;
+    private String sub;
 }

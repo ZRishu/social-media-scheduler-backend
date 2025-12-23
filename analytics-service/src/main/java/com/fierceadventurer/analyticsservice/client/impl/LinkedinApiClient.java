@@ -60,7 +60,7 @@ public class LinkedinApiClient implements ExternalPlatformClient {
         }
     }
     private String fetchUserUrn(String accessToken) {
-        String url = linkedinApiUrl + "/me";
+        String url = linkedinApiUrl + "/userinfo";
         HttpHeaders headers = createHeaders(accessToken);
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
@@ -166,7 +166,7 @@ public class LinkedinApiClient implements ExternalPlatformClient {
                 (shares * SHARE_WEIGHT);
 
         if (impressions > 0){
-            return (int) (weightedInteractions / impressions) * 1000;
+            return (int) ((weightedInteractions / impressions) * 1000);
         }
 
         return (int) weightedInteractions;
