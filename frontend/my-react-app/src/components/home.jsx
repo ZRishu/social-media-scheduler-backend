@@ -1,46 +1,74 @@
-import React, { useState } from 'react'
-import Create from '../assets/create.png';
-import HomeIcon from '../assets/home.png';
-import Notification from '../assets/notification.png';
-import Setting from '../assets/setting.png';
-import Calendar from '../assets/calendar.png';
+import React from 'react'
+import Ransome from './sideBar'
+import Navbar from './subcomponent/navbar';
+import Draftcard from './subcomponent/draftCard';
+import User from '../assets/user.png';
 
-
-function Home() {
-  const [active, setActive] = useState('Home');
-
-  const icons = [
-    { name: 'Home', src: HomeIcon },
-    { name: 'Create', src: Create ,direct:'/postCreation'},
-    { name: 'Notification', src: Notification },
-    { name: 'Calendar', src: Calendar },
-    { name: 'Setting', src: Setting },
-  ];
-
+const home = () => {
   return (
     <div>
-        {/* sidebar */}
-        <aside className="w-16 h-screen bg-gradient-to-br from-[#76C893] to-[#1E6091] text-white flex flex-col items-center py-4 shadow-md">
-          <div className="sidebar-icon text-2xl mb-10 cursor-pointer">Logo</div>
+        <div className="flex h-screen bg-gray-100 font-sans antialiased">
+            <div className="flex flex-1 bg-white shadow-xl overflow-hidden rounded-none">
+                {/* sidebar */}
+                <Ransome/>
+                {/* main content area */}
+                <div className="flex-1 flex flex-col overflow-hidden items-center">
+                    <div className='w-[460px]'>
+                        <div className='profileContent flex flex-row items-center p-4 h-[50px] gap-2 border border-gray-600'>
+                            <div className='Profile'>
+                                <img src="" alt="P" />
+                            </div>
+                            <div className='idName text-[14px] '>
+                                <h2 className='text-bold '>John Doe</h2>
+                                <p className=' text-[12px]'>@johndoe</p>
+                            </div>
+                            <div className='hidden'>
+                                <a href="#">
+                                    Follow
+                                </a>
+                            </div>
+                            <div className='option ml-auto text-bold '>
+                                ...
+                            </div>
+                        </div>
+                        <div className='ImageSection h-[615px] p-[0.8px] rounded-[5px] border border-gray-600 '>
+                            <img src="" alt="POST" />
+                        </div>
+                        <div className='flex flex-row items-center gap-2 px-2'>
+                            <div className='LikeSection gap-1'>
+                                <div className='Like'>
 
-          {icons.map((icon) => (
-            <div
-              key={icon.name}
-              onClick={() => setActive(icon.name)}
-              className={`
-                  sidebar-icon text-2xl mb-6 cursor-pointer transition-all duration-300 ease-in-out
-                  ${active === icon.name
-                  ? 'bg-white/20 backdrop-blur-md border border-white/30 p-2 rounded-xl scale-105 shadow-lg'
-                  : 'opacity-70 hover:opacity-100 hover:scale-105'
-                }
-              `}
-            >
-              <img className='h-7 relative z-10' src={icon.src} alt={icon.name} />
+                                </div>
+                                <div className='LikeCount'>
+                                    1.5M
+                                </div>
+                            </div>
+                            <div className='CommentSection'>
+                                <div className='Comment'>
+
+                                </div>
+                                <div className='CommentCount'>
+                                    500K            
+                                </div>
+                            </div>
+                            <div className='ShareSection'>
+                                <div className='Share'>
+
+                                </div>
+                                <div className='ShareCount'>
+
+                                </div>
+                            </div>
+                        </div>
+                        <div className='Caption align-middle px-2 text-sm'>
+                            Lorem ipsum dolor sit amet consectetur adipisicing.
+                        </div>
+                    </div>
+                </div>      
             </div>
-          ))}
-        </aside>      
+        </div>        
     </div>
   )
 }
 
-export default Home
+export default home

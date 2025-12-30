@@ -2,6 +2,7 @@ import Login from './components/Login'
 import IntroductoryPage from './components/introductoryPage'
 import PostCreation from './components/postCreation'
 import Drafts from './components/drafts'
+import Ransome from './components/sideBar'
 import Home from './components/home'
 
 import './App.css'
@@ -11,7 +12,7 @@ const router = createBrowserRouter(
   [
     {
       path: '/',
-      element: <IntroductoryPage/>
+      element: <Home/>
     },
     {
       path: '/signin',
@@ -26,8 +27,8 @@ const router = createBrowserRouter(
       element: <Drafts/>
     },
     {
-      path: '/home',
-      element:<Home/>
+      path: '/ransome',
+      element:<Ransome/>
     }
   ]
 ) 
